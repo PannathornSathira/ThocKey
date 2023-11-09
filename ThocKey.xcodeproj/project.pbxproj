@@ -1,0 +1,578 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		1554103F2AFC761E00AAE24B /* ThocKeyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1554103E2AFC761E00AAE24B /* ThocKeyApp.swift */; };
+		155410412AFC761E00AAE24B /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 155410402AFC761E00AAE24B /* ContentView.swift */; };
+		155410432AFC761F00AAE24B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 155410422AFC761F00AAE24B /* Assets.xcassets */; };
+		155410462AFC761F00AAE24B /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 155410452AFC761F00AAE24B /* Preview Assets.xcassets */; };
+		155410512AFC761F00AAE24B /* ThocKeyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 155410502AFC761F00AAE24B /* ThocKeyTests.swift */; };
+		1554105B2AFC761F00AAE24B /* ThocKeyUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1554105A2AFC761F00AAE24B /* ThocKeyUITests.swift */; };
+		1554105D2AFC761F00AAE24B /* ThocKeyUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1554105C2AFC761F00AAE24B /* ThocKeyUITestsLaunchTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		1554104D2AFC761F00AAE24B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 155410332AFC761E00AAE24B /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1554103A2AFC761E00AAE24B;
+			remoteInfo = ThocKey;
+		};
+		155410572AFC761F00AAE24B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 155410332AFC761E00AAE24B /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1554103A2AFC761E00AAE24B;
+			remoteInfo = ThocKey;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		1554103B2AFC761E00AAE24B /* ThocKey.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ThocKey.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		1554103E2AFC761E00AAE24B /* ThocKeyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThocKeyApp.swift; sourceTree = "<group>"; };
+		155410402AFC761E00AAE24B /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		155410422AFC761F00AAE24B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		155410452AFC761F00AAE24B /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		155410472AFC761F00AAE24B /* ThocKey.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ThocKey.entitlements; sourceTree = "<group>"; };
+		1554104C2AFC761F00AAE24B /* ThocKeyTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ThocKeyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		155410502AFC761F00AAE24B /* ThocKeyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThocKeyTests.swift; sourceTree = "<group>"; };
+		155410562AFC761F00AAE24B /* ThocKeyUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ThocKeyUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		1554105A2AFC761F00AAE24B /* ThocKeyUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThocKeyUITests.swift; sourceTree = "<group>"; };
+		1554105C2AFC761F00AAE24B /* ThocKeyUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThocKeyUITestsLaunchTests.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		155410382AFC761E00AAE24B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		155410492AFC761F00AAE24B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		155410532AFC761F00AAE24B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		155410322AFC761E00AAE24B = {
+			isa = PBXGroup;
+			children = (
+				1554103D2AFC761E00AAE24B /* ThocKey */,
+				1554104F2AFC761F00AAE24B /* ThocKeyTests */,
+				155410592AFC761F00AAE24B /* ThocKeyUITests */,
+				1554103C2AFC761E00AAE24B /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		1554103C2AFC761E00AAE24B /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				1554103B2AFC761E00AAE24B /* ThocKey.app */,
+				1554104C2AFC761F00AAE24B /* ThocKeyTests.xctest */,
+				155410562AFC761F00AAE24B /* ThocKeyUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		1554103D2AFC761E00AAE24B /* ThocKey */ = {
+			isa = PBXGroup;
+			children = (
+				1554103E2AFC761E00AAE24B /* ThocKeyApp.swift */,
+				155410402AFC761E00AAE24B /* ContentView.swift */,
+				155410422AFC761F00AAE24B /* Assets.xcassets */,
+				155410472AFC761F00AAE24B /* ThocKey.entitlements */,
+				155410442AFC761F00AAE24B /* Preview Content */,
+			);
+			path = ThocKey;
+			sourceTree = "<group>";
+		};
+		155410442AFC761F00AAE24B /* Preview Content */ = {
+			isa = PBXGroup;
+			children = (
+				155410452AFC761F00AAE24B /* Preview Assets.xcassets */,
+			);
+			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		1554104F2AFC761F00AAE24B /* ThocKeyTests */ = {
+			isa = PBXGroup;
+			children = (
+				155410502AFC761F00AAE24B /* ThocKeyTests.swift */,
+			);
+			path = ThocKeyTests;
+			sourceTree = "<group>";
+		};
+		155410592AFC761F00AAE24B /* ThocKeyUITests */ = {
+			isa = PBXGroup;
+			children = (
+				1554105A2AFC761F00AAE24B /* ThocKeyUITests.swift */,
+				1554105C2AFC761F00AAE24B /* ThocKeyUITestsLaunchTests.swift */,
+			);
+			path = ThocKeyUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		1554103A2AFC761E00AAE24B /* ThocKey */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 155410602AFC761F00AAE24B /* Build configuration list for PBXNativeTarget "ThocKey" */;
+			buildPhases = (
+				155410372AFC761E00AAE24B /* Sources */,
+				155410382AFC761E00AAE24B /* Frameworks */,
+				155410392AFC761E00AAE24B /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ThocKey;
+			productName = ThocKey;
+			productReference = 1554103B2AFC761E00AAE24B /* ThocKey.app */;
+			productType = "com.apple.product-type.application";
+		};
+		1554104B2AFC761F00AAE24B /* ThocKeyTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 155410632AFC761F00AAE24B /* Build configuration list for PBXNativeTarget "ThocKeyTests" */;
+			buildPhases = (
+				155410482AFC761F00AAE24B /* Sources */,
+				155410492AFC761F00AAE24B /* Frameworks */,
+				1554104A2AFC761F00AAE24B /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				1554104E2AFC761F00AAE24B /* PBXTargetDependency */,
+			);
+			name = ThocKeyTests;
+			productName = ThocKeyTests;
+			productReference = 1554104C2AFC761F00AAE24B /* ThocKeyTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		155410552AFC761F00AAE24B /* ThocKeyUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 155410662AFC761F00AAE24B /* Build configuration list for PBXNativeTarget "ThocKeyUITests" */;
+			buildPhases = (
+				155410522AFC761F00AAE24B /* Sources */,
+				155410532AFC761F00AAE24B /* Frameworks */,
+				155410542AFC761F00AAE24B /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				155410582AFC761F00AAE24B /* PBXTargetDependency */,
+			);
+			name = ThocKeyUITests;
+			productName = ThocKeyUITests;
+			productReference = 155410562AFC761F00AAE24B /* ThocKeyUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		155410332AFC761E00AAE24B /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					1554103A2AFC761E00AAE24B = {
+						CreatedOnToolsVersion = 15.0.1;
+					};
+					1554104B2AFC761F00AAE24B = {
+						CreatedOnToolsVersion = 15.0.1;
+						TestTargetID = 1554103A2AFC761E00AAE24B;
+					};
+					155410552AFC761F00AAE24B = {
+						CreatedOnToolsVersion = 15.0.1;
+						TestTargetID = 1554103A2AFC761E00AAE24B;
+					};
+				};
+			};
+			buildConfigurationList = 155410362AFC761E00AAE24B /* Build configuration list for PBXProject "ThocKey" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 155410322AFC761E00AAE24B;
+			productRefGroup = 1554103C2AFC761E00AAE24B /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				1554103A2AFC761E00AAE24B /* ThocKey */,
+				1554104B2AFC761F00AAE24B /* ThocKeyTests */,
+				155410552AFC761F00AAE24B /* ThocKeyUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		155410392AFC761E00AAE24B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				155410462AFC761F00AAE24B /* Preview Assets.xcassets in Resources */,
+				155410432AFC761F00AAE24B /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1554104A2AFC761F00AAE24B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		155410542AFC761F00AAE24B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		155410372AFC761E00AAE24B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				155410412AFC761E00AAE24B /* ContentView.swift in Sources */,
+				1554103F2AFC761E00AAE24B /* ThocKeyApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		155410482AFC761F00AAE24B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				155410512AFC761F00AAE24B /* ThocKeyTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		155410522AFC761F00AAE24B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1554105D2AFC761F00AAE24B /* ThocKeyUITestsLaunchTests.swift in Sources */,
+				1554105B2AFC761F00AAE24B /* ThocKeyUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		1554104E2AFC761F00AAE24B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1554103A2AFC761E00AAE24B /* ThocKey */;
+			targetProxy = 1554104D2AFC761F00AAE24B /* PBXContainerItemProxy */;
+		};
+		155410582AFC761F00AAE24B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1554103A2AFC761E00AAE24B /* ThocKey */;
+			targetProxy = 155410572AFC761F00AAE24B /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		1554105E2AFC761F00AAE24B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		1554105F2AFC761F00AAE24B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		155410612AFC761F00AAE24B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = ThocKey/ThocKey.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"ThocKey/Preview Content\"";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.yourcompany.ThocKey;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		155410622AFC761F00AAE24B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = ThocKey/ThocKey.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"ThocKey/Preview Content\"";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.yourcompany.ThocKey;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		155410642AFC761F00AAE24B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.yourcompany.ThocKeyTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ThocKey.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ThocKey";
+			};
+			name = Debug;
+		};
+		155410652AFC761F00AAE24B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.yourcompany.ThocKeyTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ThocKey.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ThocKey";
+			};
+			name = Release;
+		};
+		155410672AFC761F00AAE24B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.yourcompany.ThocKeyUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = ThocKey;
+			};
+			name = Debug;
+		};
+		155410682AFC761F00AAE24B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.yourcompany.ThocKeyUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TEST_TARGET_NAME = ThocKey;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		155410362AFC761E00AAE24B /* Build configuration list for PBXProject "ThocKey" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1554105E2AFC761F00AAE24B /* Debug */,
+				1554105F2AFC761F00AAE24B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		155410602AFC761F00AAE24B /* Build configuration list for PBXNativeTarget "ThocKey" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				155410612AFC761F00AAE24B /* Debug */,
+				155410622AFC761F00AAE24B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		155410632AFC761F00AAE24B /* Build configuration list for PBXNativeTarget "ThocKeyTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				155410642AFC761F00AAE24B /* Debug */,
+				155410652AFC761F00AAE24B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		155410662AFC761F00AAE24B /* Build configuration list for PBXNativeTarget "ThocKeyUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				155410672AFC761F00AAE24B /* Debug */,
+				155410682AFC761F00AAE24B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 155410332AFC761E00AAE24B /* Project object */;
+}
