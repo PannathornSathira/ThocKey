@@ -1,10 +1,3 @@
-//
-//  ThocKeyUITestsLaunchTests.swift
-//  ThocKeyUITests
-//
-//  Created by Jinnawat Makwisai on 9/11/2566 BE.
-//
-
 import XCTest
 
 final class ThocKeyUITestsLaunchTests: XCTestCase {

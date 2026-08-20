@@ -1,0 +1,36 @@
+# Xcode
+#
+# gitignore contributors: remember to update Global/Xcode.gitignore, Objective-C.gitignore & Swift.gitignore
+
+## User settings
+xcuserdata/
+
+## compatibility with Xcode 8 and earlier (ignoring not required starting Xcode 9)
+*.xcscmblueprint
+*.xccheckout
+
+## build state
+build/
+DerivedData/
+
+## various XCRun tools
+*.hmap
+
+## Apple Swift Package Manager
+.build/
+
+## OS X
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Thumbnails
+._*
+
+# Files that might appear on external disk
+.Spotlight-V100
+.Trashes
+
+# Agent/AI Config Files
+AGENTS.md
+.gemini/

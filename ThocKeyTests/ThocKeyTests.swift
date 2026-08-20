@@ -1,10 +1,3 @@
-//
-//  ThocKeyTests.swift
-//  ThocKeyTests
-//
-//  Created by Jinnawat Makwisai on 9/11/2566 BE.
-//
-
 import XCTest
 @testable import ThocKey
 

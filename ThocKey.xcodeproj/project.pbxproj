@@ -9,11 +9,14 @@
 /* Begin PBXBuildFile section */
 		1554103F2AFC761E00AAE24B /* ThocKeyApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1554103E2AFC761E00AAE24B /* ThocKeyApp.swift */; };
 		155410412AFC761E00AAE24B /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 155410402AFC761E00AAE24B /* ContentView.swift */; };
-		155410432AFC761F00AAE24B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 155410422AFC761F00AAE24B /* Assets.xcassets */; };
 		155410462AFC761F00AAE24B /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 155410452AFC761F00AAE24B /* Preview Assets.xcassets */; };
 		155410512AFC761F00AAE24B /* ThocKeyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 155410502AFC761F00AAE24B /* ThocKeyTests.swift */; };
 		1554105B2AFC761F00AAE24B /* ThocKeyUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1554105A2AFC761F00AAE24B /* ThocKeyUITests.swift */; };
 		1554105D2AFC761F00AAE24B /* ThocKeyUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1554105C2AFC761F00AAE24B /* ThocKeyUITestsLaunchTests.swift */; };
+		1554106E2AFC7E4300AAE24B /* SoundManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1554106D2AFC7E4300AAE24B /* SoundManager.swift */; };
+		155410762AFCA79F00AAE24B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 155410752AFCA79F00AAE24B /* Assets.xcassets */; };
+		1554107D2AFCA80700AAE24B /* thock_up.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1554107B2AFCA80700AAE24B /* thock_up.wav */; };
+		1554107E2AFCA80700AAE24B /* thock_down.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1554107C2AFCA80700AAE24B /* thock_down.wav */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -37,7 +40,6 @@
 		1554103B2AFC761E00AAE24B /* ThocKey.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ThocKey.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1554103E2AFC761E00AAE24B /* ThocKeyApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThocKeyApp.swift; sourceTree = "<group>"; };
 		155410402AFC761E00AAE24B /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		155410422AFC761F00AAE24B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		155410452AFC761F00AAE24B /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		155410472AFC761F00AAE24B /* ThocKey.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = ThocKey.entitlements; sourceTree = "<group>"; };
 		1554104C2AFC761F00AAE24B /* ThocKeyTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ThocKeyTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -45,6 +47,11 @@
 		155410562AFC761F00AAE24B /* ThocKeyUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ThocKeyUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		1554105A2AFC761F00AAE24B /* ThocKeyUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThocKeyUITests.swift; sourceTree = "<group>"; };
 		1554105C2AFC761F00AAE24B /* ThocKeyUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThocKeyUITestsLaunchTests.swift; sourceTree = "<group>"; };
+		1554106D2AFC7E4300AAE24B /* SoundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundManager.swift; sourceTree = "<group>"; };
+		155410752AFCA79F00AAE24B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		1554107B2AFCA80700AAE24B /* thock_up.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = thock_up.wav; sourceTree = "<group>"; };
+		1554107C2AFCA80700AAE24B /* thock_down.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = thock_down.wav; sourceTree = "<group>"; };
+		15CC635C2F752A6500C3F463 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -75,6 +82,8 @@
 		155410322AFC761E00AAE24B = {
 			isa = PBXGroup;
 			children = (
+				1554107C2AFCA80700AAE24B /* thock_down.wav */,
+				1554107B2AFCA80700AAE24B /* thock_up.wav */,
 				1554103D2AFC761E00AAE24B /* ThocKey */,
 				1554104F2AFC761F00AAE24B /* ThocKeyTests */,
 				155410592AFC761F00AAE24B /* ThocKeyUITests */,
@@ -95,9 +104,11 @@
 		1554103D2AFC761E00AAE24B /* ThocKey */ = {
 			isa = PBXGroup;
 			children = (
+				15CC635C2F752A6500C3F463 /* Info.plist */,
+				155410752AFCA79F00AAE24B /* Assets.xcassets */,
+				1554106D2AFC7E4300AAE24B /* SoundManager.swift */,
 				1554103E2AFC761E00AAE24B /* ThocKeyApp.swift */,
 				155410402AFC761E00AAE24B /* ContentView.swift */,
-				155410422AFC761F00AAE24B /* Assets.xcassets */,
 				155410472AFC761F00AAE24B /* ThocKey.entitlements */,
 				155410442AFC761F00AAE24B /* Preview Content */,
 			);
@@ -193,7 +204,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1500;
-				LastUpgradeCheck = 1500;
+				LastUpgradeCheck = 2640;
 				TargetAttributes = {
 					1554103A2AFC761E00AAE24B = {
 						CreatedOnToolsVersion = 15.0.1;
@@ -233,8 +244,10 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				155410762AFCA79F00AAE24B /* Assets.xcassets in Resources */,
+				1554107D2AFCA80700AAE24B /* thock_up.wav in Resources */,
+				1554107E2AFCA80700AAE24B /* thock_down.wav in Resources */,
 				155410462AFC761F00AAE24B /* Preview Assets.xcassets in Resources */,
-				155410432AFC761F00AAE24B /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -261,6 +274,7 @@
 			files = (
 				155410412AFC761E00AAE24B /* ContentView.swift in Sources */,
 				1554103F2AFC761E00AAE24B /* ThocKeyApp.swift in Sources */,
+				1554106E2AFC7E4300AAE24B /* SoundManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -331,6 +345,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -355,6 +370,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -394,6 +410,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -411,6 +428,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 			};
 			name = Release;
@@ -421,12 +439,20 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = ThocKey/ThocKey.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"ThocKey/Preview Content\"";
+				ENABLE_APP_SANDBOX = NO;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ThocKey/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "";
+				INFOPLIST_KEY_LSApplicationCategoryType = "";
+				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSFileProviderDomainUsageDescription = "This app needs access to keyboard input to play typing sounds.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -446,12 +472,20 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = ThocKey/ThocKey.entitlements;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"ThocKey/Preview Content\"";
+				ENABLE_APP_SANDBOX = NO;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ThocKey/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "";
+				INFOPLIST_KEY_LSApplicationCategoryType = "";
+				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSFileProviderDomainUsageDescription = "This app needs access to keyboard input to play typing sounds.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -468,10 +502,10 @@
 		155410642AFC761F00AAE24B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
@@ -486,10 +520,10 @@
 		155410652AFC761F00AAE24B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
@@ -504,9 +538,9 @@
 		155410672AFC761F00AAE24B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.yourcompany.ThocKeyUITests;
@@ -520,9 +554,9 @@
 		155410682AFC761F00AAE24B /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.yourcompany.ThocKeyUITests;
