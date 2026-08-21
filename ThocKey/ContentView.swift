@@ -1,48 +1,128 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var text: String = ""
+    @StateObject private var soundManager = SoundManager.shared
+    @State private var typingTestText: String = ""
+    @State private var isAccessibilityEnabled: Bool = false
+    
+    // MVP sound packs placeholder
+    let availablePacks = ["Thocky (Default)", "Creamy", "Clicky", "Quiet"]
+    @State private var selectedPack = "Thocky (Default)"
     
     var body: some View {
-        
-        Text("Press and release any key to play a sound.")
-            .font(.largeTitle)
+        VStack(spacing: 0) {
+            // Header & Privacy Promise
+            VStack(alignment: .leading, spacing: 8) {
+                Text("ThocKey Studio")
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                
+                Text("ThocKey detects key events to play sounds but never records what you type.")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding()
-        TextField("Type here...", text: $text)
-            .font(.largeTitle)
-            .padding()
-            .onAppear {
-                // preload sounds ONCE
-                SoundManager.shared.loadSound(named: "thock_down")
-                SoundManager.shared.loadSound(named: "thock_up")
-                
-                // 🔥 FORCE macOS to ask for permission
-                let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
-                let accessEnabled = AXIsProcessTrustedWithOptions(options as CFDictionary)
-                print("Accessibility enabled:", accessEnabled)
-                
-                // ✅ LOCAL (keep this so you know it still works)
-                NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-                    print("LOCAL DOWN")
-                    SoundManager.shared.playSound(named: "thock_down")
-                    return event
-                }
-                NSEvent.addLocalMonitorForEvents(matching: .keyUp) { event in
-                    print("LOCAL UP")
-                    SoundManager.shared.playSound(named: "thock_up")
-                    return event
-                }
-                
-                // ✅ GLOBAL (this is what you want)
-                NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { _ in
-                    print("GLOBAL DOWN")
-                    SoundManager.shared.playSound(named: "thock_down")
+            .background(Color(NSColor.controlBackgroundColor))
+            
+            Divider()
+            
+            Form {
+                // Section 1: Main Controls
+                Section(header: Text("Global Settings").font(.headline)) {
+                    Toggle("Enable Typing Sounds", isOn: $soundManager.isGlobalSoundEnabled)
+                        .toggleStyle(.switch)
+                        .padding(.vertical, 4)
+                    
+                    VStack(alignment: .leading) {
+                        Text("Master Volume")
+                        Slider(value: $soundManager.masterVolume, in: 0...1) {
+                            Text("Volume")
+                        } minimumValueLabel: {
+                            Image(systemName: "speaker.fill")
+                                .foregroundColor(.secondary)
+                        } maximumValueLabel: {
+                            Image(systemName: "speaker.wave.3.fill")
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .padding(.vertical, 4)
                 }
                 
-                NSEvent.addGlobalMonitorForEvents(matching: .keyUp) { _ in
-                    print("GLOBAL UP")
-                    SoundManager.shared.playSound(named: "thock_up")
+                // Section 2: Sound Packs (Placeholder for future)
+                Section(header: Text("Sound Pack").font(.headline)) {
+                    Picker("Active Pack", selection: $selectedPack) {
+                        ForEach(availablePacks, id: \.self) { pack in
+                            Text(pack).tag(pack)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .disabled(true) // Disabled until we add more packs
+                    
+                    Text("More sound packs coming in a future update!")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                
+                // Section 3: Testing Area
+                Section(header: Text("Typing Test Area").font(.headline)) {
+                    TextField("Type here to test your sounds...", text: $typingTestText)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.title3)
+                        .padding(.vertical, 4)
+                }
+                
+                // Section 4: Accessibility Status
+                Section(header: Text("Permissions").font(.headline)) {
+                    HStack {
+                        Image(systemName: isAccessibilityEnabled ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                            .foregroundColor(isAccessibilityEnabled ? .green : .yellow)
+                        
+                        Text(isAccessibilityEnabled ? "Accessibility Granted" : "Accessibility Permission Required")
+                        
+                        Spacer()
+                        
+                        if !isAccessibilityEnabled {
+                            Button("Open Settings") {
+                                openSystemSettings()
+                            }
+                        }
+                    }
+                    .padding(.vertical, 4)
+                    
+                    if !isAccessibilityEnabled {
+                        Text("ThocKey needs Accessibility permission to hear your keystrokes globally. Go to System Settings > Privacy & Security > Accessibility.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                 }
             }
+            .formStyle(.grouped)
+            .padding()
+        }
+        .onAppear {
+            checkAccessibility()
+            // Poll occasionally just in case user changes it
+            Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
+                checkAccessibility()
+            }
+        }
     }
+    
+    private func checkAccessibility() {
+        // Just checking without prompting here
+        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: false]
+        isAccessibilityEnabled = AXIsProcessTrustedWithOptions(options as CFDictionary)
+    }
+    
+    private func openSystemSettings() {
+        // Ask macOS to open Privacy & Security -> Accessibility
+        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
+            NSWorkspace.shared.open(url)
+        }
+    }
+}
+
+#Preview {
+    ContentView()
 }

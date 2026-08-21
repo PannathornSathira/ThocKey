@@ -1,25 +1,40 @@
 import SwiftUI
 import AppKit
-import ApplicationServices
 
 @main
 struct ThocKeyApp: App {
-
-    // Keep a reference to the status item
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
     var body: some Scene {
-        // Empty WindowGroup, we don't need a window anymore
-        Settings {
-            EmptyView()
+        Window("ThocKey Studio", id: "studio") {
+            ContentView()
+                // Force window to have a minimum size
+                .frame(minWidth: 400, minHeight: 300)
+        }
+        
+        MenuBarExtra("ThocKey", systemImage: "keyboard") {
+            MenuBarOptions()
         }
     }
 }
 
-// AppDelegate to handle menu bar & global keyboard
-class AppDelegate: NSObject, NSApplicationDelegate {
+struct MenuBarOptions: View {
+    @Environment(\.openWindow) private var openWindow
+    
+    var body: some View {
+        Button("Open ThocKey Studio") {
+            openWindow(id: "studio")
+            NSApp.activate(ignoringOtherApps: true)
+        }
+        Divider()
+        Button("Quit ThocKey") {
+            NSApplication.shared.terminate(nil)
+        }
+    }
+}
 
-    var statusItem: NSStatusItem?
+// AppDelegate handles global keyboard monitoring setup
+class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         
@@ -28,21 +43,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let accessEnabled = AXIsProcessTrustedWithOptions(options as CFDictionary)
         print("Accessibility enabled:", accessEnabled)
         
-        // 2️⃣ Setup menu bar icon
-        statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        if let button = statusItem?.button {
-            button.image = NSImage(systemSymbolName: "keyboard", accessibilityDescription: "ThocKey")
-        }
-
-        let menu = NSMenu()
-        menu.addItem(NSMenuItem(title: "Quit ThocKey", action: #selector(quit), keyEquivalent: "q"))
-        statusItem?.menu = menu
-
-        // 3️⃣ Load sounds
+        // 2️⃣ Load sounds
         SoundManager.shared.loadSound(named: "thock_down")
         SoundManager.shared.loadSound(named: "thock_up")
 
-        // 4️⃣ Global keyboard monitoring
+        // 3️⃣ Global keyboard monitoring (when app is in background)
         NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { _ in
             SoundManager.shared.playSound(named: "thock_down")
         }
@@ -50,9 +55,22 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSEvent.addGlobalMonitorForEvents(matching: .keyUp) { _ in
             SoundManager.shared.playSound(named: "thock_up")
         }
+        
+        // 4️⃣ Local keyboard monitoring (when app is in foreground, e.g., in the typing test area)
+        NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            // To prevent double-playing if both fire (rare, but just in case), or just play it:
+            SoundManager.shared.playSound(named: "thock_down")
+            return event
+        }
+        
+        NSEvent.addLocalMonitorForEvents(matching: .keyUp) { event in
+            SoundManager.shared.playSound(named: "thock_up")
+            return event
+        }
     }
-
-    @objc func quit() {
-        NSApplication.shared.terminate(nil)
+    
+    // Prevent the app from quitting when the main window is closed
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        return false
     }
 }
