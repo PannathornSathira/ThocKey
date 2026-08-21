@@ -1,6 +1,14 @@
-# ThocKey
+<div align="center">
+  <img src="AppIcon.jpg" alt="ThocKey Logo" width="160" height="160">
+  <h1>ThocKey</h1>
+  <p><strong>A macOS menu-bar app for customizing your keyboard sound.</strong></p>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+  [![Platform: macOS](https://img.shields.io/badge/Platform-macOS-lightgrey.svg)]()
+  [![Swift](https://img.shields.io/badge/Swift-5.9-orange.svg)]()
+</div>
+
+<br/>
 
 ThocKey is a macOS 14 SwiftUI menu-bar app that lets you customize the sound of your keyboard. Bring the satisfying *thock*, *click*, or *clack* of a premium mechanical keyboard directly to your Mac, or use any custom sound for your keystrokes!
 

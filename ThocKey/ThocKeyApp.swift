@@ -51,22 +51,30 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         SoundManager.shared.loadSound(named: "quiet_key")
 
         // 3️⃣ Global keyboard monitoring (when app is in background)
-        NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { _ in
-            SoundManager.shared.playKeyEvent(type: .down)
+        NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { event in
+            if event.modifierFlags.contains([.command, .shift]) && event.keyCode == 46 {
+                SoundManager.shared.isGlobalSoundEnabled.toggle()
+                return
+            }
+            SoundManager.shared.playKeyEvent(type: .down, keyCode: event.keyCode)
         }
 
-        NSEvent.addGlobalMonitorForEvents(matching: .keyUp) { _ in
-            SoundManager.shared.playKeyEvent(type: .up)
+        NSEvent.addGlobalMonitorForEvents(matching: .keyUp) { event in
+            SoundManager.shared.playKeyEvent(type: .up, keyCode: event.keyCode)
         }
         
         // 4️⃣ Local keyboard monitoring (when app is in foreground)
         NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-            SoundManager.shared.playKeyEvent(type: .down)
+            if event.modifierFlags.contains([.command, .shift]) && event.keyCode == 46 {
+                SoundManager.shared.isGlobalSoundEnabled.toggle()
+                return nil // consume the event
+            }
+            SoundManager.shared.playKeyEvent(type: .down, keyCode: event.keyCode)
             return event
         }
         
         NSEvent.addLocalMonitorForEvents(matching: .keyUp) { event in
-            SoundManager.shared.playKeyEvent(type: .up)
+            SoundManager.shared.playKeyEvent(type: .up, keyCode: event.keyCode)
             return event
         }
     }
