@@ -46,25 +46,27 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // 2️⃣ Load sounds
         SoundManager.shared.loadSound(named: "thock_down")
         SoundManager.shared.loadSound(named: "thock_up")
+        SoundManager.shared.loadSound(named: "creamy_key")
+        SoundManager.shared.loadSound(named: "clicky_key")
+        SoundManager.shared.loadSound(named: "quiet_key")
 
         // 3️⃣ Global keyboard monitoring (when app is in background)
         NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { _ in
-            SoundManager.shared.playSound(named: "thock_down")
+            SoundManager.shared.playKeyEvent(type: .down)
         }
 
         NSEvent.addGlobalMonitorForEvents(matching: .keyUp) { _ in
-            SoundManager.shared.playSound(named: "thock_up")
+            SoundManager.shared.playKeyEvent(type: .up)
         }
         
-        // 4️⃣ Local keyboard monitoring (when app is in foreground, e.g., in the typing test area)
+        // 4️⃣ Local keyboard monitoring (when app is in foreground)
         NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-            // To prevent double-playing if both fire (rare, but just in case), or just play it:
-            SoundManager.shared.playSound(named: "thock_down")
+            SoundManager.shared.playKeyEvent(type: .down)
             return event
         }
         
         NSEvent.addLocalMonitorForEvents(matching: .keyUp) { event in
-            SoundManager.shared.playSound(named: "thock_up")
+            SoundManager.shared.playKeyEvent(type: .up)
             return event
         }
     }

@@ -17,6 +17,9 @@
 		155410762AFCA79F00AAE24B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 155410752AFCA79F00AAE24B /* Assets.xcassets */; };
 		1554107D2AFCA80700AAE24B /* thock_up.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1554107B2AFCA80700AAE24B /* thock_up.wav */; };
 		1554107E2AFCA80700AAE24B /* thock_down.wav in Resources */ = {isa = PBXBuildFile; fileRef = 1554107C2AFCA80700AAE24B /* thock_down.wav */; };
+		15CC63612F752A6500C3F463 /* creamy_key.wav in Resources */ = {isa = PBXBuildFile; fileRef = 15CC635E2F752A6500C3F463 /* creamy_key.wav */; };
+		15CC63622F752A6500C3F463 /* clicky_key.wav in Resources */ = {isa = PBXBuildFile; fileRef = 15CC635F2F752A6500C3F463 /* clicky_key.wav */; };
+		15CC63632F752A6500C3F463 /* quiet_key.wav in Resources */ = {isa = PBXBuildFile; fileRef = 15CC63602F752A6500C3F463 /* quiet_key.wav */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -49,9 +52,12 @@
 		1554105C2AFC761F00AAE24B /* ThocKeyUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ThocKeyUITestsLaunchTests.swift; sourceTree = "<group>"; };
 		1554106D2AFC7E4300AAE24B /* SoundManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundManager.swift; sourceTree = "<group>"; };
 		155410752AFCA79F00AAE24B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		1554107B2AFCA80700AAE24B /* thock_up.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = thock_up.wav; sourceTree = "<group>"; };
-		1554107C2AFCA80700AAE24B /* thock_down.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = thock_down.wav; sourceTree = "<group>"; };
+		1554107B2AFCA80700AAE24B /* thock_up.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = ThocKey/Sounds/thock_up.wav; sourceTree = "<group>"; };
+		1554107C2AFCA80700AAE24B /* thock_down.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = ThocKey/Sounds/thock_down.wav; sourceTree = "<group>"; };
 		15CC635C2F752A6500C3F463 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		15CC635E2F752A6500C3F463 /* creamy_key.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = creamy_key.wav; sourceTree = "<group>"; };
+		15CC635F2F752A6500C3F463 /* clicky_key.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = clicky_key.wav; sourceTree = "<group>"; };
+		15CC63602F752A6500C3F463 /* quiet_key.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = quiet_key.wav; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -104,6 +110,7 @@
 		1554103D2AFC761E00AAE24B /* ThocKey */ = {
 			isa = PBXGroup;
 			children = (
+				15CC635D2F752A6500C3F463 /* Sounds */,
 				15CC635C2F752A6500C3F463 /* Info.plist */,
 				155410752AFCA79F00AAE24B /* Assets.xcassets */,
 				1554106D2AFC7E4300AAE24B /* SoundManager.swift */,
@@ -113,6 +120,16 @@
 				155410442AFC761F00AAE24B /* Preview Content */,
 			);
 			path = ThocKey;
+			sourceTree = "<group>";
+		};
+		15CC635D2F752A6500C3F463 /* Sounds */ = {
+			isa = PBXGroup;
+			children = (
+				15CC635E2F752A6500C3F463 /* creamy_key.wav */,
+				15CC635F2F752A6500C3F463 /* clicky_key.wav */,
+				15CC63602F752A6500C3F463 /* quiet_key.wav */,
+			);
+			path = Sounds;
 			sourceTree = "<group>";
 		};
 		155410442AFC761F00AAE24B /* Preview Content */ = {
@@ -247,6 +264,9 @@
 				155410762AFCA79F00AAE24B /* Assets.xcassets in Resources */,
 				1554107D2AFCA80700AAE24B /* thock_up.wav in Resources */,
 				1554107E2AFCA80700AAE24B /* thock_down.wav in Resources */,
+				15CC63612F752A6500C3F463 /* creamy_key.wav in Resources */,
+				15CC63622F752A6500C3F463 /* clicky_key.wav in Resources */,
+				15CC63632F752A6500C3F463 /* quiet_key.wav in Resources */,
 				155410462AFC761F00AAE24B /* Preview Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

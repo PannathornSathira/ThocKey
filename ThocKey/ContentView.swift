@@ -5,9 +5,8 @@ struct ContentView: View {
     @State private var typingTestText: String = ""
     @State private var isAccessibilityEnabled: Bool = false
     
-    // MVP sound packs placeholder
+    // MVP sound packs
     let availablePacks = ["Thocky (Default)", "Creamy", "Clicky", "Quiet"]
-    @State private var selectedPack = "Thocky (Default)"
     
     var body: some View {
         VStack(spacing: 0) {
@@ -49,19 +48,14 @@ struct ContentView: View {
                     .padding(.vertical, 4)
                 }
                 
-                // Section 2: Sound Packs (Placeholder for future)
+                // Section 2: Sound Packs
                 Section(header: Text("Sound Pack").font(.headline)) {
-                    Picker("Active Pack", selection: $selectedPack) {
+                    Picker("Active Pack", selection: $soundManager.selectedSoundPack) {
                         ForEach(availablePacks, id: \.self) { pack in
                             Text(pack).tag(pack)
                         }
                     }
                     .pickerStyle(.menu)
-                    .disabled(true) // Disabled until we add more packs
-                    
-                    Text("More sound packs coming in a future update!")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
                 }
                 
                 // Section 3: Testing Area

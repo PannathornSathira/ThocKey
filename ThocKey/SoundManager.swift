@@ -1,6 +1,11 @@
 import AVFoundation
 import SwiftUI
 
+enum KeyEventType {
+    case down
+    case up
+}
+
 class SoundManager: ObservableObject {
     static let shared = SoundManager()
     
@@ -8,15 +13,22 @@ class SoundManager: ObservableObject {
     @AppStorage("isGlobalSoundEnabled") var isGlobalSoundEnabled: Bool = true
     @AppStorage("masterVolume") var masterVolume: Double = 0.8 {
         didSet {
-            player.volume = Float(masterVolume)
+            for player in players {
+                player.volume = Float(masterVolume)
+            }
         }
     }
+    @AppStorage("selectedSoundPack") var selectedSoundPack: String = "Thocky (Default)"
     
     private let engine = AVAudioEngine()
-    private let player = AVAudioPlayerNode()
     private let eq = AVAudioUnitEQ(numberOfBands: 1)
+    private let mixer = AVAudioMixerNode()
     
-    private var buffer: AVAudioPCMBuffer?
+    // Node Pool for overlapping sounds
+    private var players: [AVAudioPlayerNode] = []
+    private let maxNodes = 8
+    private var currentPlayerIndex = 0
+    
     private var buffers: [String: AVAudioPCMBuffer] = [:]
     
     init() {
@@ -31,13 +43,19 @@ class SoundManager: ObservableObject {
         band.gain = 24
         band.bypass = false
         
-        engine.attach(player)
+        engine.attach(mixer)
         engine.attach(eq)
         
-        engine.connect(player, to: eq, format: nil)
+        engine.connect(mixer, to: eq, format: nil)
         engine.connect(eq, to: engine.mainMixerNode, format: nil)
         
-        player.volume = Float(masterVolume)
+        for _ in 0..<maxNodes {
+            let player = AVAudioPlayerNode()
+            engine.attach(player)
+            engine.connect(player, to: mixer, format: nil)
+            player.volume = Float(masterVolume)
+            players.append(player)
+        }
         
         try? engine.start()
     }
@@ -58,21 +76,34 @@ class SoundManager: ObservableObject {
             print(error)
         }
     }
-
-    func playSound(named fileName: String, force: Bool = false) {
-        // If sound is globally disabled and this isn't a forced play (like from the UI), don't play.
+    
+    func playKeyEvent(type: KeyEventType, force: Bool = false) {
         if !isGlobalSoundEnabled && !force { return }
         
-        guard let buffer = buffers[fileName] else {
-            print("Sound not loaded: \(fileName)")
+        var soundName = ""
+        switch selectedSoundPack {
+        case "Creamy":
+            soundName = "creamy_key"
+        case "Clicky":
+            soundName = "clicky_key"
+        case "Quiet":
+            soundName = "quiet_key"
+        default:
+            soundName = type == .down ? "thock_down" : "thock_up"
+        }
+        
+        guard let buffer = buffers[soundName] else {
+            print("Sound not loaded: \(soundName)")
             return
         }
         
+        let player = players[currentPlayerIndex]
         if player.isPlaying {
             player.stop()
         }
-        
         player.scheduleBuffer(buffer, at: nil, options: .interrupts)
         player.play()
+        
+        currentPlayerIndex = (currentPlayerIndex + 1) % maxNodes
     }
 }
