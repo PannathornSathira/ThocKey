@@ -1,42 +1,170 @@
 import SwiftUI
 
-struct ContentView: View {
-    @StateObject private var soundManager = SoundManager.shared
+public struct ContentView: View {
+    @ObservedObject private var soundManager = SoundManager.shared
+    
+    @State private var selectedTab: StudioTab = .packs
     @State private var typingTestText: String = ""
     @State private var isAccessibilityEnabled: Bool = false
     @State private var isShowingPackEditor: Bool = false
     
-    var body: some View {
-        VStack(spacing: 0) {
-            // Header & Privacy Promise
-            VStack(alignment: .leading, spacing: 8) {
-                Text("ThocKey Studio")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
-                
-                Text("ThocKey detects key events to play sounds but never records what you type.")
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+    public enum StudioTab: String, CaseIterable, Identifiable {
+        case packs = "Sounds & Packs"
+        case keyMapping = "Key Mappings"
+        case library = "Sound Library"
+        case settings = "Settings"
+        
+        public var id: String { rawValue }
+        
+        public var icon: String {
+            switch self {
+            case .packs: return "square.grid.2x2.fill"
+            case .keyMapping: return "keyboard.fill"
+            case .library: return "waveform.badge.magnifyingglass"
+            case .settings: return "gearshape.fill"
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+    
+    public init() {}
+    
+    public var body: some View {
+        VStack(spacing: 0) {
+            // Studio Header & Tab Bar
+            VStack(spacing: 12) {
+                HStack(spacing: 12) {
+                    // App Logo Icon
+                    Image("AppLogo")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 44, height: 44)
+                        .cornerRadius(10)
+                        .shadow(color: Color.black.opacity(0.15), radius: 3, x: 0, y: 2)
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 8) {
+                            Text("ThocKey Studio")
+                                .font(.title2)
+                                .fontWeight(.bold)
+                            
+                            Text("v1.0 MVP")
+                                .font(.caption2)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.secondary.opacity(0.15))
+                                .cornerRadius(6)
+                        }
+                        
+                        Text("Satisfying mechanical keyboard audio with custom sound tuning.")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                    
+                    Spacer()
+                    
+                    // Master Enable Quick Toggle
+                    Toggle(isOn: $soundManager.isGlobalSoundEnabled) {
+                        Text(soundManager.isGlobalSoundEnabled ? "Sound Active" : "Muted")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                    }
+                    .toggleStyle(.switch)
+                }
+                
+                // Segmented Tab Selector
+                Picker("Section", selection: $selectedTab) {
+                    ForEach(StudioTab.allCases) { tab in
+                        Label(tab.rawValue, systemImage: tab.icon).tag(tab)
+                    }
+                }
+                .pickerStyle(.segmented)
+            }
             .padding()
             .background(Color(NSColor.controlBackgroundColor))
             
             Divider()
             
-            Form {
-                // Section 1: Main Controls
-                Section(header: Text("Global Settings").font(.headline)) {
-                    Toggle("Enable Typing Sounds", isOn: $soundManager.isGlobalSoundEnabled)
-                        .toggleStyle(.switch)
-                        .padding(.vertical, 4)
+            // Tab Content
+            switch selectedTab {
+            case .packs:
+                packsTab
+            case .keyMapping:
+                keyMappingTab
+            case .library:
+                SoundLibraryView()
+            case .settings:
+                settingsTab
+            }
+        }
+        .frame(minWidth: 620, minHeight: 520)
+        .onAppear {
+            checkAccessibility()
+            Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
+                checkAccessibility()
+            }
+        }
+        .sheet(isPresented: $isShowingPackEditor) {
+            PackEditorView()
+        }
+    }
+    
+    // MARK: - Packs Tab
+    private var packsTab: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                
+                // Pack Selector Box
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Text("Active Sound Pack")
+                            .font(.headline)
+                        Spacer()
+                        Button(action: { isShowingPackEditor = true }) {
+                            Label("New Pack", systemImage: "plus")
+                        }
+                    }
                     
-                    Text("Global Mute Shortcut: ⌘ + ⇧ + M (Cmd + Shift + M)")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                    Picker("Active Pack", selection: $soundManager.selectedSoundPackName) {
+                        ForEach(soundManager.allPacks) { pack in
+                            Text(pack.name).tag(pack.name)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
                     
-                    VStack(alignment: .leading) {
-                        Text("Master Volume")
+                    // Pack details
+                    HStack(spacing: 16) {
+                        let downSound = soundManager.findSound(byId: soundManager.activePack.defaultDownSoundId)
+                        let upSound = soundManager.findSound(byId: soundManager.activePack.defaultUpSoundId)
+                        
+                        Label("Down: \(downSound?.displayName ?? "Default")", systemImage: "arrow.down.circle")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        Label("Up: \(upSound?.displayName ?? "Default")", systemImage: "arrow.up.circle")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                }
+                .padding()
+                .background(Color(NSColor.windowBackgroundColor))
+                .cornerRadius(10)
+                
+                // Volume & Quick Controls
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Sound Controls")
+                        .font(.headline)
+                    
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack {
+                            Text("Master Volume")
+                                .font(.subheadline)
+                            Spacer()
+                            Text("\(Int(soundManager.masterVolume * 100))%")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                        
                         Slider(value: $soundManager.masterVolume, in: 0...1) {
                             Text("Volume")
                         } minimumValueLabel: {
@@ -47,54 +175,95 @@ struct ContentView: View {
                                 .foregroundColor(.secondary)
                         }
                     }
-                    .padding(.vertical, 4)
                 }
+                .padding()
+                .background(Color(NSColor.windowBackgroundColor))
+                .cornerRadius(10)
                 
-                // Section 2: Sound Packs
-                Section(header: Text("Sound Pack").font(.headline)) {
-                    HStack {
-                        Picker("Active Pack", selection: $soundManager.selectedSoundPackName) {
-                            ForEach(soundManager.allPacks) { pack in
-                                Text(pack.name).tag(pack.name)
-                            }
-                        }
-                        .pickerStyle(.menu)
-                        
-                        Spacer()
-                        
-                        Button("Create Pack") {
-                            isShowingPackEditor = true
-                        }
-                    }
-                }
-                
-                // Section 3: Key Mapping
-                Section(header: Text("Key Mappings").font(.headline)) {
-                    Text("Customize sounds for specific keys in the current pack.")
+                // Interactive Typing Test Area
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Interactive Typing Test Area")
+                        .font(.headline)
+                    
+                    Text("Test your active sound pack directly in the box below:")
                         .font(.caption)
                         .foregroundColor(.secondary)
                     
-                    KeyMappingRow(title: "Space Bar", keyCode: 49)
-                    KeyMappingRow(title: "Enter", keyCode: 36)
-                    KeyMappingRow(title: "Backspace", keyCode: 51)
-                    KeyMappingRow(title: "Escape", keyCode: 53)
-                }
-                
-                // Section 4: Testing Area
-                Section(header: Text("Typing Test Area").font(.headline)) {
-                    TextField("Type here to test your sounds...", text: $typingTestText)
+                    TextField("Start typing here to test your mechanical keyboard sounds...", text: $typingTestText)
                         .textFieldStyle(.roundedBorder)
                         .font(.title3)
                         .padding(.vertical, 4)
                 }
+                .padding()
+                .background(Color(NSColor.windowBackgroundColor))
+                .cornerRadius(10)
+            }
+            .padding()
+        }
+    }
+    
+    // MARK: - Key Mapping Tab
+    private var keyMappingTab: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Custom Key Sounds for: \(soundManager.activePack.name)")
+                        .font(.headline)
+                    Text("Assign specific sounds from any sound pack to individual keys. Sounds display official names and are grouped by pack.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
                 
-                // Section 5: Accessibility Status
-                Section(header: Text("Permissions").font(.headline)) {
+                VStack(spacing: 8) {
+                    KeyMappingItemRow(title: "Space Bar", keyCode: 49)
+                    KeyMappingItemRow(title: "Return / Enter", keyCode: 36)
+                    KeyMappingItemRow(title: "Backspace / Delete", keyCode: 51)
+                    KeyMappingItemRow(title: "Escape", keyCode: 53)
+                    KeyMappingItemRow(title: "Tab", keyCode: 48)
+                }
+                .padding()
+                .background(Color(NSColor.windowBackgroundColor))
+                .cornerRadius(10)
+                
+                HStack {
+                    Spacer()
+                    Button("Reset Key Mappings to Default") {
+                        soundManager.activePack.keyMappings.removeAll()
+                        if let data = try? JSONEncoder().encode(soundManager.activePack.keyMappings) {
+                            UserDefaults.standard.set(data, forKey: "customMappings_\(soundManager.activePack.name)")
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                }
+            }
+            .padding()
+        }
+    }
+    
+    // MARK: - Settings Tab
+    private var settingsTab: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 20) {
+                // Permissions Card
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("macOS Accessibility Permissions")
+                        .font(.headline)
+                    
                     HStack {
                         Image(systemName: isAccessibilityEnabled ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
                             .foregroundColor(isAccessibilityEnabled ? .green : .yellow)
+                            .font(.title2)
                         
-                        Text(isAccessibilityEnabled ? "Accessibility Granted" : "Accessibility Permission Required")
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(isAccessibilityEnabled ? "Accessibility Permission Active" : "Accessibility Permission Required")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                            Text("Required for detecting global keystrokes across all applications.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
                         
                         Spacer()
                         
@@ -102,188 +271,84 @@ struct ContentView: View {
                             Button("Open Settings") {
                                 openSystemSettings()
                             }
+                            .buttonStyle(.borderedProminent)
                         }
                     }
-                    .padding(.vertical, 4)
+                }
+                .padding()
+                .background(Color(NSColor.windowBackgroundColor))
+                .cornerRadius(10)
+                
+                // Shortcut Card
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Global Shortcuts")
+                        .font(.headline)
                     
-                    if !isAccessibilityEnabled {
-                        Text("ThocKey needs Accessibility permission to hear your keystrokes globally. Go to System Settings > Privacy & Security > Accessibility.")
+                    HStack {
+                        Text("Global Sound Mute / Unmute")
+                            .font(.subheadline)
+                        Spacer()
+                        Text("⌘ + ⇧ + M")
                             .font(.caption)
-                            .foregroundColor(.secondary)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.secondary.opacity(0.15))
+                            .cornerRadius(6)
                     }
                 }
+                .padding()
+                .background(Color(NSColor.windowBackgroundColor))
+                .cornerRadius(10)
+                
+                // Privacy Guarantee Card
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Privacy by Design")
+                        .font(.headline)
+                    
+                    Text("ThocKey processes key event notifications locally in real time solely to trigger sound playback. ThocKey never logs, saves, transmits, or collects what you type.")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .padding()
+                .background(Color(NSColor.windowBackgroundColor))
+                .cornerRadius(10)
             }
-            .formStyle(.grouped)
             .padding()
-        }
-        .onAppear {
-            checkAccessibility()
-            // Poll occasionally just in case user changes it
-            Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
-                checkAccessibility()
-            }
-        }
-        .sheet(isPresented: $isShowingPackEditor) {
-            PackEditorView()
         }
     }
     
     private func checkAccessibility() {
-        // Just checking without prompting here
         let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: false]
         isAccessibilityEnabled = AXIsProcessTrustedWithOptions(options as CFDictionary)
     }
     
     private func openSystemSettings() {
-        // Ask macOS to open Privacy & Security -> Accessibility
         if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
             NSWorkspace.shared.open(url)
         }
     }
 }
 
-struct KeyMappingRow: View {
+private struct KeyMappingItemRow: View {
     let title: String
     let keyCode: UInt16
-    @ObservedObject var soundManager = SoundManager.shared
+    @ObservedObject private var soundManager = SoundManager.shared
     
     var body: some View {
         HStack {
             Text(title)
+                .font(.body)
             Spacer()
-            Picker("", selection: Binding(
-                get: { soundManager.activePack.keyMappings[keyCode] ?? "None" },
-                set: { soundManager.setMapping(for: keyCode, soundName: $0) }
-            )) {
-                Text("Default").tag("None")
-                ForEach(soundManager.availableSounds, id: \.self) { sound in
-                    Text(sound).tag(sound)
-                }
-            }
-            .pickerStyle(.menu)
-            .frame(width: 150)
+            SoundPickerView(
+                title: "",
+                selectionSoundId: Binding(
+                    get: { soundManager.activePack.keyMappings[keyCode] ?? "None" },
+                    set: { soundManager.setMapping(for: keyCode, soundId: $0) }
+                ),
+                includeDefaultOption: true,
+                defaultOptionTitle: "Default Sound"
+            )
         }
+        .padding(.vertical, 4)
     }
-}
-
-import UniformTypeIdentifiers
-
-struct PackEditorView: View {
-    @Environment(\.dismiss) private var dismiss
-    @ObservedObject var soundManager = SoundManager.shared
-    
-    @State private var packName: String = "My Custom Pack"
-    @State private var defaultDown: String = "thock_down"
-    @State private var defaultUp: String = "thock_up"
-    
-    @State private var spaceSound: String = "None"
-    @State private var enterSound: String = "None"
-    @State private var backspaceSound: String = "None"
-    @State private var escapeSound: String = "None"
-    
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section(header: Text("Pack Details")) {
-                    TextField("Pack Name", text: $packName)
-                }
-                
-                Section(header: Text("Default Sounds")) {
-                    SoundPickerRow(title: "Key Down", selection: $defaultDown, includeNone: false)
-                    SoundPickerRow(title: "Key Up", selection: $defaultUp, includeNone: false)
-                }
-                
-                Section(header: Text("Special Keys (Optional)")) {
-                    SoundPickerRow(title: "Space Bar", selection: $spaceSound, includeNone: true)
-                    SoundPickerRow(title: "Enter", selection: $enterSound, includeNone: true)
-                    SoundPickerRow(title: "Backspace", selection: $backspaceSound, includeNone: true)
-                    SoundPickerRow(title: "Escape", selection: $escapeSound, includeNone: true)
-                }
-                
-                Section {
-                    Button(action: importAudioFile) {
-                        HStack {
-                            Image(systemName: "plus.circle.fill")
-                            Text("Import New Audio File (.wav or .mp3)")
-                        }
-                    }
-                }
-            }
-            .formStyle(.grouped)
-            .padding()
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save Pack") {
-                        savePack()
-                        dismiss()
-                    }
-                    .disabled(packName.trimmingCharacters(in: .whitespaces).isEmpty)
-                }
-            }
-        }
-        .frame(width: 500, height: 600)
-    }
-    
-    private func importAudioFile() {
-        let panel = NSOpenPanel()
-        panel.allowsMultipleSelection = false
-        panel.canChooseDirectories = false
-        panel.canChooseFiles = true
-        panel.allowedContentTypes = [UTType.wav, UTType.mp3]
-        
-        if panel.runModal() == .OK, let url = panel.url {
-            if let newSoundName = soundManager.importSound(from: url) {
-                print("Imported: \(newSoundName)")
-            }
-        }
-    }
-    
-    private func savePack() {
-        var mappings: [UInt16: String] = [:]
-        if spaceSound != "None" { mappings[49] = spaceSound }
-        if enterSound != "None" { mappings[36] = enterSound }
-        if backspaceSound != "None" { mappings[51] = backspaceSound }
-        if escapeSound != "None" { mappings[53] = escapeSound }
-        
-        let newPack = SoundPack(
-            name: packName.trimmingCharacters(in: .whitespaces),
-            defaultDown: defaultDown,
-            defaultUp: defaultUp,
-            keyMappings: mappings
-        )
-        
-        soundManager.saveCustomPack(newPack)
-        soundManager.selectedSoundPackName = newPack.name
-    }
-}
-
-struct SoundPickerRow: View {
-    let title: String
-    @Binding var selection: String
-    let includeNone: Bool
-    @ObservedObject var soundManager = SoundManager.shared
-    
-    var body: some View {
-        HStack {
-            Text(title)
-            Spacer()
-            Picker("", selection: $selection) {
-                if includeNone {
-                    Text("Default").tag("None")
-                }
-                ForEach(soundManager.availableSounds, id: \.self) { sound in
-                    Text(sound).tag(sound)
-                }
-            }
-            .pickerStyle(.menu)
-            .frame(width: 200)
-        }
-    }
-}
-
-#Preview {
-    ContentView()
 }

@@ -8,8 +8,7 @@ struct ThocKeyApp: App {
     var body: some Scene {
         Window("ThocKey Studio", id: "studio") {
             ContentView()
-                // Force window to have a minimum size
-                .frame(minWidth: 400, minHeight: 300)
+                .frame(minWidth: 620, minHeight: 520)
         }
         
         MenuBarExtra("ThocKey", systemImage: "keyboard") {
@@ -20,13 +19,32 @@ struct ThocKeyApp: App {
 
 struct MenuBarOptions: View {
     @Environment(\.openWindow) private var openWindow
+    @ObservedObject private var soundManager = SoundManager.shared
     
     var body: some View {
-        Button("Open ThocKey Studio") {
+        Button(soundManager.isGlobalSoundEnabled ? "Mute Sounds" : "Enable Sounds") {
+            soundManager.isGlobalSoundEnabled.toggle()
+        }
+        
+        Divider()
+        
+        Menu("Active Pack: \(soundManager.selectedSoundPackName)") {
+            ForEach(soundManager.allPacks) { pack in
+                Button(pack.name) {
+                    soundManager.selectedSoundPackName = pack.name
+                }
+            }
+        }
+        
+        Divider()
+        
+        Button("Open ThocKey Studio...") {
             openWindow(id: "studio")
             NSApp.activate(ignoringOtherApps: true)
         }
+        
         Divider()
+        
         Button("Quit ThocKey") {
             NSApplication.shared.terminate(nil)
         }
@@ -43,16 +61,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let accessEnabled = AXIsProcessTrustedWithOptions(options as CFDictionary)
         print("Accessibility enabled:", accessEnabled)
         
-        // 2️⃣ Load sounds
-        SoundManager.shared.loadSound(named: "thock_down")
-        SoundManager.shared.loadSound(named: "thock_up")
-        SoundManager.shared.loadSound(named: "creamy_key")
-        SoundManager.shared.loadSound(named: "clicky_key")
-        SoundManager.shared.loadSound(named: "quiet_key")
-
-        // 3️⃣ Global keyboard monitoring (when app is in background)
+        // 2️⃣ Global keyboard monitoring (when app is in background)
         NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { event in
-            if event.modifierFlags.contains([.command, .shift]) && event.keyCode == 46 {
+            if event.modifierFlags.contains([.command, .shift]) && event.keyCode == 46 { // ⌘ + ⇧ + M
                 SoundManager.shared.isGlobalSoundEnabled.toggle()
                 return
             }
@@ -63,9 +74,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             SoundManager.shared.playKeyEvent(type: .up, keyCode: event.keyCode)
         }
         
-        // 4️⃣ Local keyboard monitoring (when app is in foreground)
+        // 3️⃣ Local keyboard monitoring (when app is in foreground)
         NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-            if event.modifierFlags.contains([.command, .shift]) && event.keyCode == 46 {
+            if event.modifierFlags.contains([.command, .shift]) && event.keyCode == 46 { // ⌘ + ⇧ + M
                 SoundManager.shared.isGlobalSoundEnabled.toggle()
                 return nil // consume the event
             }

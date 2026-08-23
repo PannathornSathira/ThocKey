@@ -1,20 +1,22 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-struct PackEditorView: View {
+public struct PackEditorView: View {
     @Environment(\.dismiss) private var dismiss
-    @ObservedObject var soundManager = SoundManager.shared
+    @ObservedObject private var soundManager = SoundManager.shared
     
     @State private var packName: String = "My Custom Pack"
-    @State private var defaultDown: String = "thock_down"
-    @State private var defaultUp: String = "thock_up"
+    @State private var defaultDownSoundId: String = "builtin_thock_down"
+    @State private var defaultUpSoundId: String = "builtin_thock_up"
     
-    @State private var spaceSound: String = "None"
-    @State private var enterSound: String = "None"
-    @State private var backspaceSound: String = "None"
-    @State private var escapeSound: String = "None"
+    @State private var spaceSoundId: String = "None"
+    @State private var enterSoundId: String = "None"
+    @State private var backspaceSoundId: String = "None"
+    @State private var escapeSoundId: String = "None"
     
-    var body: some View {
+    public init() {}
+    
+    public var body: some View {
         NavigationStack {
             Form {
                 Section(header: Text("Pack Details")) {
@@ -22,15 +24,43 @@ struct PackEditorView: View {
                 }
                 
                 Section(header: Text("Default Sounds")) {
-                    SoundPickerRow(title: "Key Down", selection: $defaultDown, includeNone: false)
-                    SoundPickerRow(title: "Key Up", selection: $defaultUp, includeNone: false)
+                    SoundPickerView(
+                        title: "Key Down",
+                        selectionSoundId: $defaultDownSoundId,
+                        includeDefaultOption: false
+                    )
+                    
+                    SoundPickerView(
+                        title: "Key Up",
+                        selectionSoundId: $defaultUpSoundId,
+                        includeDefaultOption: false
+                    )
                 }
                 
                 Section(header: Text("Special Keys (Optional)")) {
-                    SoundPickerRow(title: "Space Bar", selection: $spaceSound, includeNone: true)
-                    SoundPickerRow(title: "Enter", selection: $enterSound, includeNone: true)
-                    SoundPickerRow(title: "Backspace", selection: $backspaceSound, includeNone: true)
-                    SoundPickerRow(title: "Escape", selection: $escapeSound, includeNone: true)
+                    SoundPickerView(
+                        title: "Space Bar",
+                        selectionSoundId: $spaceSoundId,
+                        includeDefaultOption: true
+                    )
+                    
+                    SoundPickerView(
+                        title: "Enter",
+                        selectionSoundId: $enterSoundId,
+                        includeDefaultOption: true
+                    )
+                    
+                    SoundPickerView(
+                        title: "Backspace",
+                        selectionSoundId: $backspaceSoundId,
+                        includeDefaultOption: true
+                    )
+                    
+                    SoundPickerView(
+                        title: "Escape",
+                        selectionSoundId: $escapeSoundId,
+                        includeDefaultOption: true
+                    )
                 }
                 
                 Section {
@@ -44,6 +74,7 @@ struct PackEditorView: View {
             }
             .formStyle(.grouped)
             .padding()
+            .navigationTitle("Create Sound Pack")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
@@ -57,7 +88,7 @@ struct PackEditorView: View {
                 }
             }
         }
-        .frame(width: 500, height: 600)
+        .frame(minWidth: 500, minHeight: 550)
     }
     
     private func importAudioFile() {
@@ -65,54 +96,31 @@ struct PackEditorView: View {
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
         panel.canChooseFiles = true
-        panel.allowedContentTypes = [UTType.wav, UTType.mp3]
+        panel.allowedContentTypes = [UTType.wav, UTType.mp3, UTType.aiff]
         
         if panel.runModal() == .OK, let url = panel.url {
-            if let newSoundName = soundManager.importSound(from: url) {
-                print("Imported: \(newSoundName)")
+            if let newSound = soundManager.importSound(from: url) {
+                defaultDownSoundId = newSound.id
             }
         }
     }
     
     private func savePack() {
         var mappings: [UInt16: String] = [:]
-        if spaceSound != "None" { mappings[49] = spaceSound }
-        if enterSound != "None" { mappings[36] = enterSound }
-        if backspaceSound != "None" { mappings[51] = backspaceSound }
-        if escapeSound != "None" { mappings[53] = escapeSound }
+        if spaceSoundId != "None" && !spaceSoundId.isEmpty { mappings[49] = spaceSoundId }
+        if enterSoundId != "None" && !enterSoundId.isEmpty { mappings[36] = enterSoundId }
+        if backspaceSoundId != "None" && !backspaceSoundId.isEmpty { mappings[51] = backspaceSoundId }
+        if escapeSoundId != "None" && !escapeSoundId.isEmpty { mappings[53] = escapeSoundId }
         
         let newPack = SoundPack(
             name: packName.trimmingCharacters(in: .whitespaces),
-            defaultDown: defaultDown,
-            defaultUp: defaultUp,
-            keyMappings: mappings
+            defaultDownSoundId: defaultDownSoundId,
+            defaultUpSoundId: defaultUpSoundId,
+            keyMappings: mappings,
+            isBuiltIn: false
         )
         
         soundManager.saveCustomPack(newPack)
         soundManager.selectedSoundPackName = newPack.name
-    }
-}
-
-struct SoundPickerRow: View {
-    let title: String
-    @Binding var selection: String
-    let includeNone: Bool
-    @ObservedObject var soundManager = SoundManager.shared
-    
-    var body: some View {
-        HStack {
-            Text(title)
-            Spacer()
-            Picker("", selection: $selection) {
-                if includeNone {
-                    Text("Default").tag("None")
-                }
-                ForEach(soundManager.availableSounds, id: \.self) { sound in
-                    Text(sound).tag(sound)
-                }
-            }
-            .pickerStyle(.menu)
-            .frame(width: 200)
-        }
     }
 }
