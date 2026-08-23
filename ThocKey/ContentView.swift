@@ -70,14 +70,39 @@ private struct PacksStudioView: View {
                     }
                 }
 
+                // Active Pack Card & Breakdown
                 StudioSurface {
                     VStack(alignment: .leading, spacing: StudioTheme.Spacing.regular) {
-                        Text("ACTIVE PACK")
-                            .font(.system(size: 11, weight: .bold))
-                            .tracking(0.8)
-                            .foregroundStyle(StudioTheme.walnut)
+                        HStack {
+                            Text("ACTIVE SOUND PACK")
+                                .font(.system(size: 11, weight: .bold))
+                                .tracking(0.8)
+                                .foregroundStyle(StudioTheme.walnut)
+                            Spacer()
+                            HStack(spacing: 4) {
+                                Circle()
+                                    .fill(StudioTheme.moss)
+                                    .frame(width: 8, height: 8)
+                                Text("Active")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundStyle(StudioTheme.moss)
+                            }
+                        }
 
-                        ZStack {
+                        // Active Pack Picker Card
+                        Menu {
+                            ForEach(appModel.allPacks) { pack in
+                                Button {
+                                    appModel.selectPack(id: pack.id)
+                                } label: {
+                                    if pack.id == appModel.selectedPackID {
+                                        Label(pack.name, systemImage: "checkmark")
+                                    } else {
+                                        Text(pack.name)
+                                    }
+                                }
+                            }
+                        } label: {
                             HStack(spacing: StudioTheme.Spacing.medium) {
                                 Circle()
                                     .fill(StudioTheme.moss)
@@ -91,36 +116,18 @@ private struct PacksStudioView: View {
                                     .font(.system(size: 12, weight: .semibold))
                                     .foregroundStyle(StudioTheme.secondaryText)
                             }
-
-                            Menu {
-                                ForEach(appModel.allPacks) { pack in
-                                    Button {
-                                        appModel.selectPack(id: pack.id)
-                                    } label: {
-                                        if pack.id == appModel.selectedPackID {
-                                            Label(pack.name, systemImage: "checkmark")
-                                        } else {
-                                            Text(pack.name)
-                                        }
-                                    }
-                                }
-                            } label: {
-                                Color.clear
-                                    .frame(maxWidth: .infinity, minHeight: 42)
-                                    .contentShape(Rectangle())
+                            .padding(.horizontal, StudioTheme.Spacing.regular)
+                            .frame(maxWidth: .infinity, minHeight: 42)
+                            .background(StudioTheme.canvas)
+                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .stroke(StudioTheme.separator, lineWidth: 1)
                             }
-                            .menuStyle(.borderlessButton)
-                            .menuIndicator(.hidden)
+                            .contentShape(Rectangle())
                         }
-                        .padding(.horizontal, StudioTheme.Spacing.regular)
-                        .frame(maxWidth: .infinity, minHeight: 42)
-                        .background(StudioTheme.canvas)
-                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                .stroke(StudioTheme.separator, lineWidth: 1)
-                        }
-                        .accessibilityElement(children: .contain)
+                        .menuStyle(.borderlessButton)
+                        .menuIndicator(.hidden)
                         .accessibilityLabel("Active Pack")
                         .accessibilityValue(appModel.activePack.name)
                         .accessibilityIdentifier("active-pack-picker")
@@ -141,6 +148,7 @@ private struct PacksStudioView: View {
                     }
                 }
 
+                // Master Volume Slider
                 HStack(spacing: StudioTheme.Spacing.regular) {
                     Image(systemName: "speaker.wave.2.fill")
                         .foregroundStyle(StudioTheme.walnut)
@@ -157,6 +165,7 @@ private struct PacksStudioView: View {
                 }
                 .padding(.horizontal, StudioTheme.Spacing.xSmall)
 
+                // Interactive Typing Test Pad
                 ZStack {
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
                         .fill(StudioTheme.surface.opacity(0.72))
@@ -173,6 +182,9 @@ private struct PacksStudioView: View {
                         .background(Color.clear)
                         .accessibilityLabel("Typing test")
                         .accessibilityIdentifier("typing-test-field")
+                        .onChange(of: typingTestText) { _ in
+                            appModel.playKeyEvent(type: .down, force: true)
+                        }
 
                     if typingTestText.isEmpty {
                         Text("Type here to test \(displayPackName)…")
@@ -180,6 +192,7 @@ private struct PacksStudioView: View {
                             .foregroundStyle(StudioTheme.secondaryText)
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                             .padding(StudioTheme.Spacing.large)
+                            .allowsHitTesting(false)
 
                         VStack(spacing: StudioTheme.Spacing.small) {
                             Image(systemName: "keyboard")
@@ -191,7 +204,34 @@ private struct PacksStudioView: View {
                         .allowsHitTesting(false)
                     }
                 }
-                .frame(minHeight: 190)
+                .frame(minHeight: 140)
+
+                // Available Sound Packs Grid
+                VStack(alignment: .leading, spacing: StudioTheme.Spacing.medium) {
+                    Text("ALL SOUND PACKS")
+                        .font(.system(size: 11, weight: .bold))
+                        .tracking(0.8)
+                        .foregroundStyle(StudioTheme.walnut)
+                        .padding(.horizontal, StudioTheme.Spacing.xSmall)
+
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: StudioTheme.Spacing.medium) {
+                        ForEach(appModel.allPacks) { pack in
+                            let isSelected = pack.id == appModel.selectedPackID
+                            SoundPackSelectionCard(
+                                pack: pack,
+                                isSelected: isSelected,
+                                onSelect: {
+                                    appModel.selectPack(id: pack.id)
+                                },
+                                onPreview: {
+                                    if let sound = appModel.findSound(byId: pack.defaultDownSoundId) {
+                                        appModel.playPreview(soundId: sound.id)
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
             }
             .padding(StudioTheme.Spacing.xLarge)
         }
@@ -199,6 +239,92 @@ private struct PacksStudioView: View {
 
     private var displayPackName: String {
         appModel.activePack.name.replacingOccurrences(of: " (Default)", with: "")
+    }
+}
+
+private struct SoundPackSelectionCard: View {
+    let pack: SoundPack
+    let isSelected: Bool
+    let onSelect: () -> Void
+    let onPreview: () -> Void
+
+    private var descriptionText: String {
+        switch pack.name {
+        case "Thocky (Default)", "Thocky":
+            return "Deep, satisfying acoustic mechanical thock"
+        case "Creamy":
+            return "Smooth, lubricated linear switch feel"
+        case "Clicky":
+            return "Crisp, tactile Cherry MX Blue click"
+        case "Quiet":
+            return "Muted, office-friendly dampened stroke"
+        default:
+            return pack.isBuiltIn ? "Built-in sound pack" : "Custom user-crafted sound pack"
+        }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                HStack(spacing: 8) {
+                    Circle()
+                        .fill(isSelected ? StudioTheme.moss : Color.clear)
+                        .frame(width: 14, height: 14)
+                        .overlay(Circle().stroke(isSelected ? StudioTheme.moss : StudioTheme.separator, lineWidth: 2))
+                    
+                    Text(pack.name)
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(StudioTheme.espresso)
+                }
+
+                Spacer()
+
+                Button(action: onPreview) {
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(StudioTheme.espresso)
+                        .frame(width: 28, height: 28)
+                        .background(StudioTheme.surfaceMuted)
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .help("Preview \(pack.name)")
+            }
+
+            Text(descriptionText)
+                .font(.system(size: 12))
+                .foregroundStyle(StudioTheme.secondaryText)
+                .lineLimit(2)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            HStack {
+                if isSelected {
+                    HStack(spacing: 4) {
+                        Image(systemName: "checkmark.circle.fill")
+                        Text("Active")
+                    }
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(StudioTheme.moss)
+                } else {
+                    Button("Select Pack") {
+                        onSelect()
+                    }
+                    .buttonStyle(SecondaryButtonStyle())
+                }
+                Spacer()
+            }
+        }
+        .padding(StudioTheme.Spacing.regular)
+        .background(isSelected ? StudioTheme.surface : StudioTheme.surface.opacity(0.6))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(isSelected ? StudioTheme.moss : StudioTheme.separator.opacity(0.8), lineWidth: isSelected ? 2 : 1)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            onSelect()
+        }
     }
 }
 
@@ -236,7 +362,7 @@ private struct ActiveSoundRow: View {
             .buttonStyle(.plain)
             .foregroundStyle(StudioTheme.espresso)
             .disabled(sound == nil)
-            .help("Preview \(title.lowercased())")
+            .accessibilityLabel("Preview \(title.lowercased())")
             .accessibilityIdentifier(title == "Press Sound" ? "preview-press-button" : "preview-release-button")
         }
     }

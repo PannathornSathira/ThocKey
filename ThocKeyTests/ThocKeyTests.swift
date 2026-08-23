@@ -30,6 +30,27 @@ final class ThocKeyTests: XCTestCase {
         XCTAssertTrue(packs.allSatisfy { UUID(uuidString: $0.id) != nil })
     }
 
+    func testBuiltInPacks_ContainAllFourDefaultPacks() {
+        let packs = BuiltInSoundData.builtInPacks
+        let names = packs.map(\.name)
+        XCTAssertTrue(names.contains("Thocky (Default)"))
+        XCTAssertTrue(names.contains("Creamy"))
+        XCTAssertTrue(names.contains("Clicky"))
+        XCTAssertTrue(names.contains("Quiet"))
+    }
+
+    func testSelectPack_SwitchesActivePackSuccessfully() {
+        let model = makeModel()
+        guard let creamy = BuiltInSoundData.builtInPacks.first(where: { $0.name == "Creamy" }) else {
+            XCTFail("Creamy pack should exist")
+            return
+        }
+        model.selectPack(id: creamy.id)
+        XCTAssertEqual(model.selectedPackID, creamy.id)
+        XCTAssertEqual(model.activePack.name, "Creamy")
+        XCTAssertEqual(model.activePack.defaultDownSoundId, "builtin_creamy_down")
+    }
+
     func testCatalogStore_SaveAndLoadRoundTrip() throws {
         let pack = SoundPack(name: "Test", defaultDownSoundId: "builtin_thock_down", defaultUpSoundId: "builtin_thock_up")
         let manifest = CatalogManifest(packs: [pack], selectedPackID: pack.id)

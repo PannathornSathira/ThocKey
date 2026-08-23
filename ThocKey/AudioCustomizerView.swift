@@ -3,7 +3,7 @@ import AVFoundation
 
 public struct AudioCustomizerView: View {
     @Environment(\.dismiss) private var dismiss
-    @ObservedObject private var soundManager = SoundManager.shared
+    @ObservedObject private var appModel = AppModel.shared
     
     public let initialSound: SoundItem?
     public let initialFileURL: URL?
@@ -44,7 +44,7 @@ public struct AudioCustomizerView: View {
             return fileURL
         }
         if let sound = initialSound {
-            return soundManager.findSoundURL(for: sound)
+            return appModel.findSoundURL(for: sound)
         }
         return nil
     }
@@ -381,7 +381,7 @@ public struct AudioCustomizerView: View {
                 outputURL: tempURL
             )
             tempPlayer = try AVAudioPlayer(contentsOf: tempURL)
-            tempPlayer?.volume = Float(soundManager.masterVolume)
+            tempPlayer?.volume = Float(appModel.masterVolume)
             tempPlayer?.play()
         } catch {
             print("Preview failed: \(error)")
@@ -393,7 +393,7 @@ public struct AudioCustomizerView: View {
         if let existingID = initialSound?.id {
             soundId = existingID
         } else if let fileURL = initialFileURL {
-            do { soundId = try soundManager.importSound(from: fileURL).id }
+            do { soundId = try appModel.importSound(from: fileURL).id }
             catch { errorMessage = error.localizedDescription; return }
         } else {
             errorMessage = "Could not resolve sound source"
@@ -411,7 +411,7 @@ public struct AudioCustomizerView: View {
             do {
                 var savedSound: SoundItem?
                 if isSplitMode {
-                    let result = try await soundManager.splitKeystrokeSound(
+                    let result = try await appModel.splitKeystrokeSound(
                         sourceSoundId: soundId,
                         downName: downSoundName,
                         upName: upSoundName,
@@ -424,7 +424,7 @@ public struct AudioCustomizerView: View {
                     )
                     savedSound = result.down
                 } else {
-                    savedSound = try await soundManager.saveTrimmedSound(
+                    savedSound = try await appModel.saveTrimmedSound(
                         sourceSoundId: soundId,
                         newDisplayName: customDisplayName,
                         packName: "Customized",
@@ -437,8 +437,8 @@ public struct AudioCustomizerView: View {
                 
                 await MainActor.run {
                     if let sound = savedSound, shouldAutoActivate {
-                        do { try soundManager.setActiveSound(sound: sound) }
-                        catch { soundManager.present(error) }
+                        do { try appModel.setActiveSound(sound: sound) }
+                        catch { appModel.present(error) }
                     }
                     isProcessing = false
                     dismiss()

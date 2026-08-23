@@ -61,6 +61,8 @@ public final class AudioPlaybackEngine: AudioPlaying {
         let pcmBuffer = try buffer(soundID: soundID, url: url)
         let player = players[currentPlayerIndex]
         if player.isPlaying { player.stop() }
+        engine.disconnectNodeOutput(player)
+        engine.connect(player, to: mixer, format: pcmBuffer.format)
         player.scheduleBuffer(pcmBuffer, at: nil, options: .interrupts)
         player.play()
         currentPlayerIndex = (currentPlayerIndex + 1) % maxPlayers

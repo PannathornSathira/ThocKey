@@ -114,6 +114,7 @@ public struct PrimaryButtonStyle: ButtonStyle {
             .padding(.vertical, 9)
             .background(configuration.isPressed ? StudioTheme.walnutPressed : StudioTheme.walnut)
             .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
     }
 }
 
@@ -132,6 +133,7 @@ public struct SecondaryButtonStyle: ButtonStyle {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .stroke(StudioTheme.separator, lineWidth: 1)
             }
+            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 }
 
@@ -177,8 +179,10 @@ public struct StudioSidebar: View {
                             .foregroundStyle(selection == tab ? Color.white : StudioTheme.espresso)
                             .background(selection == tab ? StudioTheme.walnut : Color.clear)
                             .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+                            .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(tab.rawValue)
                     .accessibilityAddTraits(selection == tab ? .isSelected : [])
                 }
             }
@@ -199,6 +203,7 @@ public struct StudioSidebar: View {
                         .foregroundStyle(StudioTheme.secondaryText)
                 }
             }
+            .accessibilityElement(children: .contain)
             .foregroundStyle(StudioTheme.espresso)
             .padding(StudioTheme.Spacing.regular)
         }

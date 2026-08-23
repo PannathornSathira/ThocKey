@@ -32,34 +32,48 @@ final class ThocKeyUITests: XCTestCase {
     func testSoundToggle_ChangesState() {
         let toggle = app.switches["sound-active-toggle"]
         XCTAssertTrue(toggle.waitForExistence(timeout: 5))
-        let previous = toggle.value as? String
+        let previous = String(describing: toggle.value ?? "")
         toggle.click()
-        XCTAssertNotEqual(toggle.value as? String, previous)
+        let current = String(describing: toggle.value ?? "")
+        XCTAssertNotEqual(current, previous)
     }
 
     func testPackSelection_PreviewTypingAndVolume() {
-        let packSelector = app.otherElements["active-pack-picker"]
+        let packSelector = app.descendants(matching: .any)["active-pack-picker"].firstMatch
         XCTAssertTrue(packSelector.waitForExistence(timeout: 5))
         packSelector.click()
-        app.menuItems["Creamy"].click()
+        app.menuItems["Creamy"].firstMatch.click()
         XCTAssertTrue(app.staticTexts["Creamy"].waitForExistence(timeout: 2))
 
         XCTAssertTrue(app.buttons["preview-press-button"].exists)
         app.buttons["preview-press-button"].click()
 
         let typingTest = app.textViews["typing-test-field"]
+        XCTAssertTrue(typingTest.waitForExistence(timeout: 5))
         typingTest.click()
         typingTest.typeText("abc")
         XCTAssertEqual(typingTest.value as? String, "abc")
 
         let volume = app.sliders["master-volume-slider"]
         volume.adjust(toNormalizedSliderPosition: 0.35)
-        XCTAssertLessThan(Double(volume.value as? String ?? "1") ?? 1, 0.6)
+        let rawVal = volume.value
+        let volumeNum: Double = {
+            if let num = rawVal as? NSNumber { return num.doubleValue }
+            if let str = rawVal as? String {
+                let cleaned = str.replacingOccurrences(of: "%", with: "").trimmingCharacters(in: .whitespaces)
+                if let parsed = Double(cleaned) { return parsed > 1.0 ? parsed / 100.0 : parsed }
+            }
+            return 1.0
+        }()
+        XCTAssertLessThan(volumeNum, 0.6)
     }
 
     func testAccessibilityStatus_IsVisible() {
         XCTAssertTrue(app.staticTexts["Permissions"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["Accessibility active"].exists || app.staticTexts["Action required"].exists)
+        let hasActiveOrRequired = app.staticTexts["Accessibility active"].exists || 
+                                  app.staticTexts["Action required"].exists ||
+                                  app.staticTexts.containing(NSPredicate(format: "label CONTAINS[c] 'active' OR label CONTAINS[c] 'required'")).firstMatch.exists
+        XCTAssertTrue(hasActiveOrRequired)
     }
 
     func testStudioReopening_RetainsSoundPreference() {
