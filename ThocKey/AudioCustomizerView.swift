@@ -80,8 +80,8 @@ public struct AudioCustomizerView: View {
                                     .font(.caption)
                                     .padding(.horizontal, 8)
                                     .padding(.vertical, 3)
-                                    .background(Color.accentColor.opacity(0.15))
-                                    .foregroundColor(.accentColor)
+                                    .background(StudioTheme.walnut.opacity(0.15))
+                                    .foregroundStyle(StudioTheme.walnut)
                                     .cornerRadius(12)
                             }
                         }
@@ -105,7 +105,7 @@ public struct AudioCustomizerView: View {
                         // Waveform Visualizer
                         ZStack(alignment: .leading) {
                             RoundedRectangle(cornerRadius: 8)
-                                .fill(Color(NSColor.controlBackgroundColor))
+                                .fill(StudioTheme.surfaceMuted)
                                 .frame(height: 100)
                             
                             // Waveform bars
@@ -116,7 +116,7 @@ public struct AudioCustomizerView: View {
                                     let isSelected = progress >= startRatio && progress <= endRatio
                                     
                                     RoundedRectangle(cornerRadius: 2)
-                                        .fill(isSelected ? Color.accentColor : Color.secondary.opacity(0.3))
+                                    .fill(isSelected ? StudioTheme.walnut : StudioTheme.secondaryText.opacity(0.3))
                                         .frame(height: CGFloat(max(6, sample * 80)))
                                 }
                             }
@@ -142,7 +142,7 @@ public struct AudioCustomizerView: View {
                                     .cornerRadius(4)
                                 
                                 Slider(value: $startRatio, in: 0.0...0.95)
-                                    .onChange(of: startRatio) { newStart in
+                                    .onChange(of: startRatio) { _, newStart in
                                         if newStart >= endRatio {
                                             endRatio = min(1.0, newStart + 0.05)
                                         }
@@ -173,7 +173,7 @@ public struct AudioCustomizerView: View {
                                     .cornerRadius(4)
                                 
                                 Slider(value: $endRatio, in: 0.05...1.0)
-                                    .onChange(of: endRatio) { newEnd in
+                                    .onChange(of: endRatio) { _, newEnd in
                                         if newEnd <= startRatio {
                                             startRatio = max(0.0, newEnd - 0.05)
                                         }
@@ -193,7 +193,7 @@ public struct AudioCustomizerView: View {
                         }
                     }
                     .padding()
-                    .background(Color(NSColor.windowBackgroundColor))
+                    .background(StudioTheme.surface)
                     .cornerRadius(10)
                     
                     // Split Mode Toggle
@@ -225,7 +225,7 @@ public struct AudioCustomizerView: View {
                         }
                     }
                     .padding()
-                    .background(Color(NSColor.windowBackgroundColor))
+                    .background(StudioTheme.surface)
                     .cornerRadius(10)
                     
                     // Audio Tweaks
@@ -250,7 +250,7 @@ public struct AudioCustomizerView: View {
                             .foregroundColor(.accentColor)
                     }
                     .padding()
-                    .background(Color(NSColor.windowBackgroundColor))
+                    .background(StudioTheme.surface)
                     .cornerRadius(10)
                     
                     // Live Keystroke Test Area & Preview
@@ -270,12 +270,12 @@ public struct AudioCustomizerView: View {
                         TextField("Type here to test trimmed sound with keyboard rhythm...", text: $testTypingText)
                             .textFieldStyle(.roundedBorder)
                             .padding(.top, 2)
-                            .onChange(of: testTypingText) { _ in
+                            .onChange(of: testTypingText) {
                                 previewTrimmedAudio()
                             }
                     }
                     .padding()
-                    .background(Color(NSColor.windowBackgroundColor))
+                    .background(StudioTheme.surface)
                     .cornerRadius(10)
                     
                     // Output Sound Name
@@ -288,7 +288,7 @@ public struct AudioCustomizerView: View {
                                 .textFieldStyle(.roundedBorder)
                         }
                         .padding()
-                        .background(Color(NSColor.windowBackgroundColor))
+                        .background(StudioTheme.surface)
                         .cornerRadius(10)
                     }
                     
@@ -314,7 +314,8 @@ public struct AudioCustomizerView: View {
                 }
             }
         }
-        .frame(minWidth: 540, minHeight: 480)
+        .frame(minWidth: 620, minHeight: 560)
+        .background(StudioTheme.canvas)
         .onAppear {
             setupInitialState()
         }
@@ -388,7 +389,13 @@ public struct AudioCustomizerView: View {
     }
     
     private func saveSound() {
-        guard let soundId = initialSound?.id ?? (initialFileURL != nil ? soundManager.importSound(from: initialFileURL!)?.id : nil) else {
+        let soundId: String
+        if let existingID = initialSound?.id {
+            soundId = existingID
+        } else if let fileURL = initialFileURL {
+            do { soundId = try soundManager.importSound(from: fileURL).id }
+            catch { errorMessage = error.localizedDescription; return }
+        } else {
             errorMessage = "Could not resolve sound source"
             return
         }
@@ -430,7 +437,8 @@ public struct AudioCustomizerView: View {
                 
                 await MainActor.run {
                     if let sound = savedSound, shouldAutoActivate {
-                        soundManager.setActiveSound(sound: sound)
+                        do { try soundManager.setActiveSound(sound: sound) }
+                        catch { soundManager.present(error) }
                     }
                     isProcessing = false
                     dismiss()

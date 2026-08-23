@@ -96,7 +96,7 @@ public struct SoundPickerView: View {
                 }
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
-                .background(Color(NSColor.controlBackgroundColor))
+                .background(StudioTheme.surfaceMuted)
                 .cornerRadius(6)
                 .overlay(
                     RoundedRectangle(cornerRadius: 6)

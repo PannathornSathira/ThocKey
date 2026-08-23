@@ -16,7 +16,7 @@ ThocKey is a macOS 14 SwiftUI menu-bar app that lets you customize the sound of 
 
 - 🎧 **Custom Key Sounds:** Play a satisfying sound on every key down and key up event.
 - 🎛️ **Menu-Bar Native:** Lives quietly in your macOS menu bar for quick access to toggle sounds on and off.
-- 🛠️ **Customizable:** Easily replace the default `thock_down.wav` and `thock_up.wav` files with your own `.wav` or `.mp3` audio files.
+- 🛠️ **Customizable:** Import, trim, split, rename, and map WAV, MP3, AIFF, or M4A sounds from ThocKey Studio.
 - ⚡ **Lightweight:** Built with SwiftUI and AVFoundation for minimal resource usage.
 
 ## Installation & Setup
@@ -38,16 +38,14 @@ ThocKey is a macOS 14 SwiftUI menu-bar app that lets you customize the sound of 
 
 ## How to Use Custom Sounds
 
-By default, the app uses `thock_down.wav` and `thock_up.wav` located in the root of the project. 
+Open **ThocKey Studio → Sound Library → Import Audio**. Imported sounds are validated and copied into `~/Library/Application Support/ThocKey/Sounds`; metadata and pack mappings are stored locally in a versioned catalog. Audio files must be 50 MB or smaller and no longer than 60 seconds.
 
-To use your own sounds:
-1. Replace `thock_down.wav` and `thock_up.wav` in the project with your preferred audio files.
-2. If your files have different names or formats (e.g., `.mp3`), update the resource lookups in `SoundManager.swift` and make sure they are bundled in your Xcode project's `Copy Bundle Resources` build phase.
-3. Rebuild and launch the app!
+Use **Customize** to trim a recording or split it into key-down and key-up sounds. Create reusable combinations from **Sounds & Packs → New Pack**, then assign special keys from **Key Mappings**.
 
 ## Development
 
-- **App Structure:** `ThocKeyApp.swift` owns app startup and status-menu behavior, while `SoundManager.swift` handles AVFoundation playback.
+- **App Structure:** `AppModel` coordinates UI state, while `LocalCatalogStore`, `AudioPlaybackEngine`, and `KeyboardMonitor` own persistence, playback, and global event monitoring respectively. `SoundManager` remains only as a compatibility type alias.
+- **Distribution:** The project is configured for direct Developer ID distribution with Hardened Runtime. App Sandbox remains disabled because the MVP depends on Accessibility-authorized global keyboard monitoring; sign and notarize release builds before publishing.
 - **Testing:** 
   Run unit and UI tests from Xcode, or via the command line:
   ```bash
