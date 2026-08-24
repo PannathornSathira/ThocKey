@@ -1,17 +1,17 @@
 import SwiftUI
 
 public enum StudioTheme {
-    public static let canvas = adaptive(light: 0xF7F2EA, dark: 0x211A17)
-    public static let sidebar = adaptive(light: 0xEFE6DA, dark: 0x2A211D)
-    public static let surface = adaptive(light: 0xFCF9F4, dark: 0x332823)
-    public static let surfaceMuted = adaptive(light: 0xEEE3D5, dark: 0x3B2E28)
-    public static let espresso = adaptive(light: 0x30251F, dark: 0xF4ECE3)
-    public static let secondaryText = adaptive(light: 0x77685E, dark: 0xBFAFA4)
-    public static let walnut = adaptive(light: 0x8A5638, dark: 0xC4865F)
-    public static let walnutPressed = adaptive(light: 0x6E422C, dark: 0xA96E4B)
-    public static let caramel = adaptive(light: 0xB9784B, dark: 0xD89B72)
+    public static let canvas = adaptive(light: 0xFFFDF8, dark: 0x211A17)
+    public static let sidebar = adaptive(light: 0xF7EFE4, dark: 0x2A211D)
+    public static let surface = adaptive(light: 0xFFFFFF, dark: 0x332823)
+    public static let surfaceMuted = adaptive(light: 0xF4EBDD, dark: 0x3B2E28)
+    public static let espresso = adaptive(light: 0x34251D, dark: 0xF4ECE3)
+    public static let secondaryText = adaptive(light: 0x74645A, dark: 0xBFAFA4)
+    public static let walnut = adaptive(light: 0x885235, dark: 0xC4865F)
+    public static let walnutPressed = adaptive(light: 0x6C3F28, dark: 0xA96E4B)
+    public static let caramel = adaptive(light: 0xB66F42, dark: 0xD89B72)
     public static let moss = adaptive(light: 0x667342, dark: 0x96A96A)
-    public static let separator = adaptive(light: 0xDCCDBE, dark: 0x56443B)
+    public static let separator = adaptive(light: 0xE3D7C9, dark: 0x56443B)
     public static let danger = adaptive(light: 0xA94A3F, dark: 0xE07A6D)
 
     public enum Spacing {

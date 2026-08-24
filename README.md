@@ -3,7 +3,7 @@
   <h1>ThocKey</h1>
   <p><strong>A macOS menu-bar app for customizing your keyboard sound.</strong></p>
 
-  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+  ![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)
   [![Platform: macOS](https://img.shields.io/badge/Platform-macOS-lightgrey.svg)]()
   [![Swift](https://img.shields.io/badge/Swift-5.9-orange.svg)]()
 </div>
@@ -54,4 +54,12 @@ Use **Customize** to trim a recording or split it into key-down and key-up sound
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+Copyright © 2026 Pannathorn. All rights reserved.
+
+The source code is visible for evaluation and development transparency, but no
+permission is granted to copy, modify, redistribute, sublicense, or sell it.
+Earlier versions that were validly obtained under the MIT License remain subject
+to that license; this notice applies to the current and future proprietary work.
+
+See [MONETIZATION.md](MONETIZATION.md) for the planned free product, premium
+sound packs, supporter purchases, and creator marketplace.

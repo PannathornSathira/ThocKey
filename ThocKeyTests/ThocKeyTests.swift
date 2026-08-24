@@ -39,6 +39,20 @@ final class ThocKeyTests: XCTestCase {
         XCTAssertTrue(names.contains("Quiet"))
     }
 
+    func testBuiltInSounds_AreUnifiedAndReleaseFallsBackToPress() {
+        let sounds = BuiltInSoundData.builtInSounds
+        XCTAssertEqual(sounds.count, 4)
+        XCTAssertEqual(Set(sounds.map(\.displayName)).count, 4)
+
+        let original = sounds.first { $0.id == "builtin_thock" }
+        XCTAssertEqual(original?.pressFileName, "thock_down")
+        XCTAssertEqual(original?.releaseFileName, "thock_up")
+
+        let creamy = sounds.first { $0.id == "builtin_creamy" }
+        XCTAssertNil(creamy?.releaseFileName)
+        XCTAssertEqual(creamy?.fileName(for: .up), creamy?.pressFileName)
+    }
+
     func testSelectPack_SwitchesActivePackSuccessfully() {
         let model = makeModel()
         guard let creamy = BuiltInSoundData.builtInPacks.first(where: { $0.name == "Creamy" }) else {
@@ -48,11 +62,11 @@ final class ThocKeyTests: XCTestCase {
         model.selectPack(id: creamy.id)
         XCTAssertEqual(model.selectedPackID, creamy.id)
         XCTAssertEqual(model.activePack.name, "Creamy")
-        XCTAssertEqual(model.activePack.defaultDownSoundId, "builtin_creamy_down")
+        XCTAssertEqual(model.activePack.defaultSoundId, "builtin_creamy")
     }
 
     func testCatalogStore_SaveAndLoadRoundTrip() throws {
-        let pack = SoundPack(name: "Test", defaultDownSoundId: "builtin_thock_down", defaultUpSoundId: "builtin_thock_up")
+        let pack = SoundPack(name: "Test", defaultSoundId: "builtin_thock")
         let manifest = CatalogManifest(packs: [pack], selectedPackID: pack.id)
         try store.saveCatalog(manifest)
         XCTAssertEqual(try store.loadCatalog(), manifest)
@@ -60,7 +74,7 @@ final class ThocKeyTests: XCTestCase {
 
     func testCatalogStore_CorruptPrimaryRecoversBackup() throws {
         let first = CatalogManifest(selectedPackID: BuiltInSoundData.defaultPackID)
-        let secondPack = SoundPack(name: "Second", defaultDownSoundId: "builtin_thock_down", defaultUpSoundId: "builtin_thock_up")
+        let secondPack = SoundPack(name: "Second", defaultSoundId: "builtin_thock")
         try store.saveCatalog(first)
         try store.saveCatalog(CatalogManifest(packs: [secondPack], selectedPackID: secondPack.id))
         try Data("not-json".utf8).write(to: rootURL.appendingPathComponent("catalog.json"), options: .atomic)
@@ -75,13 +89,13 @@ final class ThocKeyTests: XCTestCase {
     }
 
     func testDuplicatePackNames_SelectionRemainsIDBased() throws {
-        let first = SoundPack(name: "Same Name", defaultDownSoundId: "builtin_thock_down", defaultUpSoundId: "builtin_thock_up")
-        let second = SoundPack(name: "Same Name", defaultDownSoundId: "builtin_clicky_down", defaultUpSoundId: "builtin_clicky_up")
+        let first = SoundPack(name: "Same Name", defaultSoundId: "builtin_thock")
+        let second = SoundPack(name: "Same Name", defaultSoundId: "builtin_clicky")
         try store.saveCatalog(CatalogManifest(packs: [first, second], selectedPackID: second.id))
 
         let model = makeModel()
         XCTAssertEqual(model.selectedPackID, second.id)
-        XCTAssertEqual(model.activePack.defaultDownSoundId, "builtin_clicky_down")
+        XCTAssertEqual(model.activePack.defaultSoundId, "builtin_clicky")
     }
 
     func testLegacyNameSelectionAndMapping_MigrateToCatalogIDs() throws {
@@ -91,16 +105,16 @@ final class ThocKeyTests: XCTestCase {
 
         let model = makeModel()
         XCTAssertEqual(model.activePack.name, "Creamy")
-        XCTAssertEqual(model.activePack.keyMappings[49], "builtin_clicky_down")
+        XCTAssertEqual(model.activePack.keyMappings[49], "builtin_clicky")
         XCTAssertNotNil(try store.loadCatalog())
     }
 
     func testMapping_PersistsAcrossModelInstances() {
         let first = makeModel()
-        first.setMapping(for: 49, soundId: "builtin_clicky_down")
+        first.setMapping(for: 49, soundId: "builtin_clicky")
 
         let second = makeModel()
-        XCTAssertEqual(second.activePack.keyMappings[49], "builtin_clicky_down")
+        XCTAssertEqual(second.activePack.keyMappings[49], "builtin_clicky")
         second.setMapping(for: 49, soundId: "None")
         XCTAssertNil(second.activePack.keyMappings[49])
     }
@@ -108,12 +122,112 @@ final class ThocKeyTests: XCTestCase {
     func testDeleteSound_WhenReferencedReturnsPackNames() throws {
         let model = makeModel()
         let sound = try model.importSound(from: bundledSoundURL())
-        let pack = SoundPack(name: "Reference Pack", defaultDownSoundId: sound.id, defaultUpSoundId: sound.id)
+        let pack = SoundPack(name: "Reference Pack", defaultSoundId: sound.id)
         try model.saveCustomPack(pack)
 
         XCTAssertThrowsError(try model.deleteSound(id: sound.id)) { error in
             XCTAssertEqual(error as? ThocKeyError, .soundInUse(["Reference Pack"]))
         }
+    }
+
+    func testImportedSound_AppearsImmediatelyAndGeneratedPackIsReused() throws {
+        let model = makeModel()
+        let sound = try model.importSound(from: bundledSoundURL(), displayName: "My Switch")
+
+        XCTAssertEqual(model.customSounds.map(\.id), [sound.id])
+        XCTAssertEqual(try model.setActiveSound(sound: sound), "My Switch")
+        let generatedID = model.selectedPackID
+        XCTAssertEqual(model.activePack.sourceSoundId, sound.id)
+        XCTAssertEqual(model.activePack.defaultSoundId, sound.id)
+
+        _ = try model.setActiveSound(sound: sound)
+        XCTAssertEqual(model.selectedPackID, generatedID)
+        XCTAssertEqual(model.customPacks.filter { $0.sourceSoundId == sound.id }.count, 1)
+    }
+
+    func testCustomizeCustomSound_ReplacesItemWithoutCreatingDuplicateRows() async throws {
+        let model = makeModel()
+        let imported = try model.importSound(from: bundledSoundURL(), displayName: "Imported")
+
+        let customized = try await model.saveTrimmedSound(
+            sourceSoundId: imported.id,
+            newDisplayName: "Refined",
+            startTime: 0,
+            endTime: 0.02,
+            replacingSoundId: imported.id
+        )
+
+        XCTAssertEqual(customized.id, imported.id)
+        XCTAssertEqual(customized.displayName, "Refined")
+        XCTAssertEqual(model.customSounds.count, 1)
+        XCTAssertEqual(model.customSounds.first?.id, imported.id)
+    }
+
+    func testDeleteSound_RemovesGeneratedPackAndFallsBackToOriginal() throws {
+        let model = makeModel()
+        let sound = try model.importSound(from: bundledSoundURL())
+        _ = try model.setActiveSound(sound: sound)
+
+        try model.deleteSound(id: sound.id)
+
+        XCTAssertNil(model.findSound(byId: sound.id))
+        XCTAssertFalse(model.customPacks.contains { $0.sourceSoundId == sound.id })
+        XCTAssertEqual(model.selectedPackID, BuiltInSoundData.defaultPackID)
+    }
+
+    func testAppearancePreference_PersistsAcrossModels() {
+        let first = makeModel()
+        first.appearancePreference = .light
+
+        XCTAssertEqual(makeModel().appearancePreference, .light)
+    }
+
+    func testCatalogV1Migration_MergesDistinctVariantsAndCustomizedCategory() throws {
+        let pressURL = store.soundsDirectoryURL.appendingPathComponent("legacy_down.wav")
+        let releaseURL = store.soundsDirectoryURL.appendingPathComponent("legacy_up.wav")
+        try FileManager.default.copyItem(at: bundledSoundURL(), to: pressURL)
+        try FileManager.default.copyItem(at: bundledSoundURL(), to: releaseURL)
+        let packID = UUID().uuidString
+        let json = """
+        {
+          "schemaVersion": 1,
+          "sounds": [
+            {"id":"legacy_down","displayName":"Legacy (Down)","fileName":"legacy_down.wav","packName":"Customized","category":"Customized","duration":0.09,"isBuiltIn":false},
+            {"id":"legacy_up","displayName":"Legacy (Up)","fileName":"legacy_up.wav","packName":"Customized","category":"Customized","duration":0.09,"isBuiltIn":false}
+          ],
+          "packs": [
+            {"id":"\(packID)","name":"Legacy Pack","defaultDownSoundId":"legacy_down","defaultUpSoundId":"legacy_up","keyMappings":[],"isBuiltIn":false}
+          ],
+          "selectedPackID":"\(packID)",
+          "packMappings":{}
+        }
+        """
+        _ = try JSONDecoder().decode(CatalogManifest.self, from: Data(json.utf8))
+        try Data(json.utf8).write(to: rootURL.appendingPathComponent("catalog.json"), options: .atomic)
+
+        let model = makeModel()
+        let unified = model.findSound(byId: model.activePack.defaultSoundId)
+
+        XCTAssertEqual(model.selectedPackID, packID)
+        XCTAssertEqual(unified?.displayName, "Legacy")
+        XCTAssertEqual(unified?.pressFileName, "legacy_down.wav")
+        XCTAssertEqual(unified?.releaseFileName, "legacy_up.wav")
+        XCTAssertEqual(unified?.category, .custom)
+        XCTAssertEqual(try store.loadCatalog()?.schemaVersion, 2)
+    }
+
+    func testKeyMapping_UsesMappedSoundForPressAndRelease() {
+        let player = MockAudioPlayer()
+        let model = AppModel(
+            catalogStore: store, playback: player,
+            keyboardMonitor: MockKeyboardMonitor(), userDefaults: defaults
+        )
+        model.setMapping(for: 49, soundId: "builtin_thock")
+
+        model.playKeyEvent(type: .down, keyCode: 49, force: true)
+        model.playKeyEvent(type: .up, keyCode: 49, force: true)
+
+        XCTAssertEqual(player.playedSoundIDs.suffix(2), ["builtin_thock:press", "builtin_thock:release"])
     }
 
     func testImportSound_RejectsUnsupportedExtension() throws {
@@ -137,7 +251,7 @@ final class ThocKeyTests: XCTestCase {
     }
 
     func testMissingCustomSoundFile_IsRemovedDuringLoad() throws {
-        let sound = SoundItem(displayName: "Missing", fileName: "missing.wav")
+        let sound = SoundItem(displayName: "Missing", pressFileName: "missing.wav")
         try store.saveCatalog(CatalogManifest(sounds: [sound], selectedPackID: BuiltInSoundData.defaultPackID))
         XCTAssertNil(makeModel().findSound(byId: sound.id))
     }
@@ -175,7 +289,7 @@ final class ThocKeyTests: XCTestCase {
         let model = makeModel()
         await XCTAssertThrowsErrorAsync(
             try await model.saveTrimmedSound(
-                sourceSoundId: "builtin_thock_down", newDisplayName: "   ",
+                sourceSoundId: "builtin_thock", newDisplayName: "   ",
                 startTime: 0, endTime: 0.02
             )
         ) { error in
@@ -211,9 +325,10 @@ private func XCTAssertThrowsErrorAsync<T>(
 
 @MainActor
 private final class MockAudioPlayer: AudioPlaying {
+    var playedSoundIDs: [String] = []
     func setVolume(_ volume: Double) {}
     func preload(soundID: String, from url: URL) throws {}
-    func play(soundID: String, from url: URL) throws {}
+    func play(soundID: String, from url: URL) throws { playedSoundIDs.append(soundID) }
     func remove(soundID: String) {}
     func clearCache() {}
 }

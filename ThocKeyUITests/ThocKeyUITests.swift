@@ -18,6 +18,33 @@ final class ThocKeyUITests: XCTestCase {
         XCTAssertTrue(app.switches["sound-active-toggle"].exists)
         XCTAssertTrue(app.buttons["new-pack-button"].exists)
         XCTAssertTrue(app.textViews["typing-test-field"].exists)
+        XCTAssertFalse(app.staticTexts["ALL SOUND PACKS"].exists)
+    }
+
+    func testNewPack_UsesSingleDefaultSoundPicker() {
+        let newPackButton = app.buttons["new-pack-button"]
+        XCTAssertTrue(newPackButton.waitForExistence(timeout: 5))
+        newPackButton.click()
+
+        XCTAssertTrue(app.staticTexts["Default Sound"].waitForExistence(timeout: 2))
+        XCTAssertFalse(app.staticTexts["Key Down"].exists)
+        XCTAssertFalse(app.staticTexts["Key Up"].exists)
+    }
+
+    func testAppearancePicker_IsAvailableAndPersists() {
+        app.buttons["Settings"].click()
+        let picker = app.descendants(matching: .any)["appearance-picker"].firstMatch
+        XCTAssertTrue(picker.waitForExistence(timeout: 2))
+
+        let light = app.buttons["Light"].firstMatch
+        XCTAssertTrue(light.exists)
+        light.click()
+
+        app.terminate()
+        app.launchEnvironment["THOCKEY_UI_TEST_RESET_DEFAULTS"] = "0"
+        app.launch()
+        app.buttons["Settings"].click()
+        XCTAssertTrue(app.buttons["Light"].firstMatch.isSelected)
     }
 
     func testSidebarNavigation_OpensLibraryAndSettings() {

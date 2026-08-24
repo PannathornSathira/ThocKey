@@ -25,7 +25,7 @@ public struct SoundPickerView: View {
             return defaultOptionTitle
         }
         if let sound = appModel.findSound(byId: selectionSoundId) {
-            return "\(sound.displayName) (\(sound.packName))"
+            return sound.displayName
         }
         return selectionSoundId
     }
@@ -66,9 +66,9 @@ public struct SoundPickerView: View {
                     Divider()
                 }
                 
-                let grouped = appModel.groupedSoundsByPack()
-                ForEach(grouped, id: \.packName) { group in
-                    Section(header: Text("\(group.packName) Pack")) {
+                let grouped = appModel.groupedSoundsByCategory()
+                ForEach(grouped, id: \.category) { group in
+                    Section(header: Text(group.category.rawValue)) {
                         ForEach(group.sounds) { sound in
                             Button(action: {
                                 selectionSoundId = sound.id

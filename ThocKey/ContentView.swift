@@ -91,14 +91,32 @@ private struct PacksStudioView: View {
 
                         // Active Pack Picker Card
                         Menu {
-                            ForEach(appModel.allPacks) { pack in
-                                Button {
-                                    appModel.selectPack(id: pack.id)
-                                } label: {
-                                    if pack.id == appModel.selectedPackID {
-                                        Label(pack.name, systemImage: "checkmark")
-                                    } else {
-                                        Text(pack.name)
+                            Section("Sound Packs") {
+                                ForEach(appModel.selectablePacks) { pack in
+                                    Button {
+                                        appModel.selectPack(id: pack.id)
+                                    } label: {
+                                        if pack.id == appModel.selectedPackID {
+                                            Label(pack.name, systemImage: "checkmark")
+                                        } else {
+                                            Text(pack.name)
+                                        }
+                                    }
+                                }
+                            }
+                            if !appModel.customSounds.isEmpty {
+                                Section("Library Sounds") {
+                                    ForEach(appModel.customSounds) { sound in
+                                        Button {
+                                            do { try appModel.setActiveSound(sound: sound) }
+                                            catch { appModel.present(error) }
+                                        } label: {
+                                            if appModel.activePack.sourceSoundId == sound.id {
+                                                Label(sound.displayName, systemImage: "checkmark")
+                                            } else {
+                                                Text(sound.displayName)
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -108,7 +126,7 @@ private struct PacksStudioView: View {
                                     .fill(StudioTheme.moss)
                                     .frame(width: 12, height: 12)
                                     .overlay(Circle().fill(Color.white).frame(width: 4, height: 4))
-                                Text(appModel.activePack.name)
+                                Text(appModel.selectedSoundPackName)
                                     .font(.system(size: 16, weight: .semibold))
                                     .foregroundStyle(StudioTheme.espresso)
                                 Spacer()
@@ -129,21 +147,24 @@ private struct PacksStudioView: View {
                         .menuStyle(.borderlessButton)
                         .menuIndicator(.hidden)
                         .accessibilityLabel("Active Pack")
-                        .accessibilityValue(appModel.activePack.name)
+                        .accessibilityValue(appModel.selectedSoundPackName)
                         .accessibilityIdentifier("active-pack-picker")
 
                         Divider().overlay(StudioTheme.separator)
 
+                        let activeSound = appModel.findSound(byId: appModel.activePack.defaultSoundId)
                         ActiveSoundRow(
                             title: "Press Sound",
                             icon: "arrow.down",
-                            sound: appModel.findSound(byId: appModel.activePack.defaultDownSoundId)
+                            sound: activeSound,
+                            event: .down
                         )
                         Divider().overlay(StudioTheme.separator.opacity(0.7))
                         ActiveSoundRow(
                             title: "Release Sound",
                             icon: "arrow.up",
-                            sound: appModel.findSound(byId: appModel.activePack.defaultUpSoundId)
+                            sound: activeSound,
+                            event: .up
                         )
                     }
                 }
@@ -182,7 +203,7 @@ private struct PacksStudioView: View {
                         .background(Color.clear)
                         .accessibilityLabel("Typing test")
                         .accessibilityIdentifier("typing-test-field")
-                        .onChange(of: typingTestText) { _ in
+                        .onChange(of: typingTestText) {
                             appModel.playKeyEvent(type: .down, force: true)
                         }
 
@@ -206,32 +227,6 @@ private struct PacksStudioView: View {
                 }
                 .frame(minHeight: 140)
 
-                // Available Sound Packs Grid
-                VStack(alignment: .leading, spacing: StudioTheme.Spacing.medium) {
-                    Text("ALL SOUND PACKS")
-                        .font(.system(size: 11, weight: .bold))
-                        .tracking(0.8)
-                        .foregroundStyle(StudioTheme.walnut)
-                        .padding(.horizontal, StudioTheme.Spacing.xSmall)
-
-                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: StudioTheme.Spacing.medium) {
-                        ForEach(appModel.allPacks) { pack in
-                            let isSelected = pack.id == appModel.selectedPackID
-                            SoundPackSelectionCard(
-                                pack: pack,
-                                isSelected: isSelected,
-                                onSelect: {
-                                    appModel.selectPack(id: pack.id)
-                                },
-                                onPreview: {
-                                    if let sound = appModel.findSound(byId: pack.defaultDownSoundId) {
-                                        appModel.playPreview(soundId: sound.id)
-                                    }
-                                }
-                            )
-                        }
-                    }
-                }
             }
             .padding(StudioTheme.Spacing.xLarge)
         }
@@ -242,97 +237,12 @@ private struct PacksStudioView: View {
     }
 }
 
-private struct SoundPackSelectionCard: View {
-    let pack: SoundPack
-    let isSelected: Bool
-    let onSelect: () -> Void
-    let onPreview: () -> Void
-
-    private var descriptionText: String {
-        switch pack.name {
-        case "Thocky (Default)", "Thocky":
-            return "Deep, satisfying acoustic mechanical thock"
-        case "Creamy":
-            return "Smooth, lubricated linear switch feel"
-        case "Clicky":
-            return "Crisp, tactile Cherry MX Blue click"
-        case "Quiet":
-            return "Muted, office-friendly dampened stroke"
-        default:
-            return pack.isBuiltIn ? "Built-in sound pack" : "Custom user-crafted sound pack"
-        }
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                HStack(spacing: 8) {
-                    Circle()
-                        .fill(isSelected ? StudioTheme.moss : Color.clear)
-                        .frame(width: 14, height: 14)
-                        .overlay(Circle().stroke(isSelected ? StudioTheme.moss : StudioTheme.separator, lineWidth: 2))
-                    
-                    Text(pack.name)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(StudioTheme.espresso)
-                }
-
-                Spacer()
-
-                Button(action: onPreview) {
-                    Image(systemName: "play.fill")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(StudioTheme.espresso)
-                        .frame(width: 28, height: 28)
-                        .background(StudioTheme.surfaceMuted)
-                        .clipShape(Circle())
-                }
-                .buttonStyle(.plain)
-                .help("Preview \(pack.name)")
-            }
-
-            Text(descriptionText)
-                .font(.system(size: 12))
-                .foregroundStyle(StudioTheme.secondaryText)
-                .lineLimit(2)
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-            HStack {
-                if isSelected {
-                    HStack(spacing: 4) {
-                        Image(systemName: "checkmark.circle.fill")
-                        Text("Active")
-                    }
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(StudioTheme.moss)
-                } else {
-                    Button("Select Pack") {
-                        onSelect()
-                    }
-                    .buttonStyle(SecondaryButtonStyle())
-                }
-                Spacer()
-            }
-        }
-        .padding(StudioTheme.Spacing.regular)
-        .background(isSelected ? StudioTheme.surface : StudioTheme.surface.opacity(0.6))
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(isSelected ? StudioTheme.moss : StudioTheme.separator.opacity(0.8), lineWidth: isSelected ? 2 : 1)
-        }
-        .contentShape(Rectangle())
-        .onTapGesture {
-            onSelect()
-        }
-    }
-}
-
 private struct ActiveSoundRow: View {
     @ObservedObject private var appModel = AppModel.shared
     let title: String
     let icon: String
     let sound: SoundItem?
+    let event: KeyEventType
 
     var body: some View {
         HStack(spacing: StudioTheme.Spacing.medium) {
@@ -346,13 +256,13 @@ private struct ActiveSoundRow: View {
                 Text(title)
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(StudioTheme.espresso)
-                Text(sound?.displayName ?? "Sound unavailable")
+                Text(detailText)
                     .font(.system(size: 12))
                     .foregroundStyle(StudioTheme.secondaryText)
             }
             Spacer()
             Button {
-                if let sound { appModel.playPreview(soundId: sound.id) }
+                if let sound { appModel.playPreview(soundId: sound.id, event: event) }
             } label: {
                 Image(systemName: "play.fill")
                     .frame(width: 30, height: 30)
@@ -365,6 +275,12 @@ private struct ActiveSoundRow: View {
             .accessibilityLabel("Preview \(title.lowercased())")
             .accessibilityIdentifier(title == "Press Sound" ? "preview-press-button" : "preview-release-button")
         }
+    }
+
+    private var detailText: String {
+        guard let sound else { return "Sound unavailable" }
+        if event == .up, sound.releaseFileName == nil { return "\(sound.displayName) · Same as Press" }
+        return sound.displayName
     }
 }
 
@@ -426,6 +342,32 @@ private struct SettingsStudioView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: StudioTheme.Spacing.large) {
                 StudioSectionHeader(title: "Settings", subtitle: "Permissions, shortcuts, and privacy.")
+
+                StudioSurface {
+                    HStack(spacing: StudioTheme.Spacing.medium) {
+                        Image(systemName: "circle.lefthalf.filled")
+                            .foregroundStyle(StudioTheme.walnut)
+                            .frame(width: 24)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Appearance")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(StudioTheme.espresso)
+                            Text("Choose a warm light theme, dark theme, or follow macOS.")
+                                .font(.system(size: 11))
+                                .foregroundStyle(StudioTheme.secondaryText)
+                        }
+                        Spacer()
+                        Picker("Appearance", selection: $appModel.appearancePreference) {
+                            ForEach(AppearancePreference.allCases) { preference in
+                                Text(preference.rawValue).tag(preference)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.segmented)
+                        .frame(width: 220)
+                        .accessibilityIdentifier("appearance-picker")
+                    }
+                }
 
                 StudioSurface {
                     HStack(spacing: StudioTheme.Spacing.medium) {

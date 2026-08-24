@@ -17,7 +17,7 @@ public struct SoundLibraryView: View {
         appModel.soundLibrary.filter { sound in
             let matchesSearch = searchText.isEmpty
                 || sound.displayName.localizedCaseInsensitiveContains(searchText)
-                || sound.packName.localizedCaseInsensitiveContains(searchText)
+                || sound.category.rawValue.localizedCaseInsensitiveContains(searchText)
             return matchesSearch && (selectedFilter == nil || selectedFilter == sound.category)
         }
     }
@@ -38,7 +38,7 @@ public struct SoundLibraryView: View {
             HStack(spacing: StudioTheme.Spacing.medium) {
                 HStack(spacing: StudioTheme.Spacing.small) {
                     Image(systemName: "magnifyingglass").foregroundStyle(StudioTheme.secondaryText)
-                    TextField("Search sounds or packs", text: $searchText)
+                    TextField("Search sounds", text: $searchText)
                         .textFieldStyle(.plain)
                     if !searchText.isEmpty {
                         Button { searchText = "" } label: { Image(systemName: "xmark.circle.fill") }
@@ -78,7 +78,7 @@ public struct SoundLibraryView: View {
                         ForEach(Array(filteredSounds.enumerated()), id: \.element.id) { index, sound in
                             SoundRow(
                                 sound: sound,
-                                isActive: appModel.activePack.defaultDownSoundId == sound.id || appModel.activePack.defaultUpSoundId == sound.id,
+                                isActive: appModel.activePack.defaultSoundId == sound.id,
                                 isPlaying: currentlyPlayingID == sound.id,
                                 onPlay: { play(sound) },
                                 onActivate: { activate(sound) },
@@ -115,7 +115,7 @@ public struct SoundLibraryView: View {
     private func play(_ sound: SoundItem) {
         currentlyPlayingID = sound.id
         appModel.playPreview(soundId: sound.id)
-        DispatchQueue.main.asyncAfter(deadline: .now() + max(0.25, sound.duration)) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + max(0.25, sound.pressDuration)) {
             if currentlyPlayingID == sound.id { currentlyPlayingID = nil }
         }
     }
@@ -175,7 +175,7 @@ public struct SoundRow: View {
                 Text(sound.displayName)
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(StudioTheme.espresso)
-                Text("\(sound.packName) · \(String(format: "%.0f ms", sound.duration * 1_000))")
+                Text(soundDetail)
                     .font(.system(size: 11))
                     .foregroundStyle(StudioTheme.secondaryText)
             }
@@ -198,5 +198,13 @@ public struct SoundRow: View {
             }
         }
         .padding(.vertical, StudioTheme.Spacing.medium)
+    }
+
+    private var soundDetail: String {
+        let press = String(format: "%.0f ms", sound.pressDuration * 1_000)
+        if let releaseDuration = sound.releaseDuration {
+            return "\(sound.category.rawValue) · Press \(press) · Release \(String(format: "%.0f ms", releaseDuration * 1_000))"
+        }
+        return "\(sound.category.rawValue) · \(press) · Release uses Press"
     }
 }

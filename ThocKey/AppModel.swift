@@ -2,10 +2,27 @@ import AppKit
 import AVFoundation
 import Foundation
 import OSLog
+import SwiftUI
 
 public enum KeyEventType {
     case down
     case up
+}
+
+public enum AppearancePreference: String, CaseIterable, Identifiable {
+    case system = "System"
+    case light = "Light"
+    case dark = "Dark"
+
+    public var id: String { rawValue }
+
+    public var colorScheme: ColorScheme? {
+        switch self {
+        case .system: nil
+        case .light: .light
+        case .dark: .dark
+        }
+    }
 }
 
 @MainActor
@@ -35,6 +52,9 @@ public final class AppModel: ObservableObject {
             playback?.setVolume(masterVolume)
         }
     }
+    @Published public var appearancePreference: AppearancePreference {
+        didSet { userDefaults.set(appearancePreference.rawValue, forKey: Keys.appearance) }
+    }
     @Published public private(set) var selectedPackID: String
     @Published public private(set) var activePack: SoundPack = BuiltInSoundData.builtInPacks[0]
     @Published public private(set) var customPacks: [SoundPack] = []
@@ -43,8 +63,10 @@ public final class AppModel: ObservableObject {
     @Published public var presentedError: ThocKeyError?
 
     public var allPacks: [SoundPack] { BuiltInSoundData.builtInPacks + customPacks }
+    public var selectablePacks: [SoundPack] { BuiltInSoundData.builtInPacks + customPacks.filter { $0.sourceSoundId == nil } }
+    public var customSounds: [SoundItem] { soundLibrary.filter { !$0.isBuiltIn }.sorted { $0.displayName < $1.displayName } }
     public var selectedSoundPackName: String {
-        get { activePack.name }
+        get { activePack.sourceSoundId.flatMap(findSound(byId:))?.displayName ?? activePack.name }
         set {
             guard let pack = allPacks.first(where: { $0.name == newValue }) else { return }
             selectPack(id: pack.id)
@@ -54,6 +76,7 @@ public final class AppModel: ObservableObject {
     private enum Keys {
         static let soundEnabled = "isGlobalSoundEnabled"
         static let masterVolume = "masterVolume"
+        static let appearance = "appearancePreference"
         static let legacySelectedPackName = "selectedSoundPackName"
     }
 
@@ -75,6 +98,9 @@ public final class AppModel: ObservableObject {
         self.userDefaults = userDefaults
         self.isGlobalSoundEnabled = userDefaults.object(forKey: Keys.soundEnabled) as? Bool ?? true
         self.masterVolume = userDefaults.object(forKey: Keys.masterVolume) as? Double ?? 0.8
+        self.appearancePreference = AppearancePreference(
+            rawValue: userDefaults.string(forKey: Keys.appearance) ?? ""
+        ) ?? .system
         self.selectedPackID = BuiltInSoundData.defaultPackID
         self.keyboardMonitor = keyboardMonitor ?? KeyboardMonitor()
 
@@ -146,36 +172,36 @@ public final class AppModel: ObservableObject {
             return
         }
         pack.keyMappings = packMappings[pack.id] ?? pack.keyMappings
+        if let sourceID = pack.sourceSoundId, let sound = findSound(byId: sourceID) {
+            pack.name = sound.displayName
+            pack.defaultSoundId = sound.id
+        }
         activePack = pack
     }
 
-    public func groupedSoundsByPack() -> [(packName: String, sounds: [SoundItem])] {
-        let grouped = Dictionary(grouping: soundLibrary, by: \SoundItem.packName)
-        let preferredOrder = ["Thocky", "Creamy", "Clicky", "Quiet", "Custom", "Customized"]
-        var result = preferredOrder.compactMap { name -> (String, [SoundItem])? in
-            guard let sounds = grouped[name], !sounds.isEmpty else { return nil }
-            return (name, sounds.sorted { $0.displayName < $1.displayName })
+    public func groupedSoundsByCategory() -> [(category: SoundCategory, sounds: [SoundItem])] {
+        SoundCategory.allCases.compactMap { category in
+            let sounds = soundLibrary.filter { $0.category == category }.sorted { $0.displayName < $1.displayName }
+            return sounds.isEmpty ? nil : (category, sounds)
         }
-        result.append(contentsOf: grouped
-            .filter { !preferredOrder.contains($0.key) }
-            .sorted { $0.key < $1.key }
-            .map { ($0.key, $0.value.sorted { $0.displayName < $1.displayName }) })
-        return result
     }
 
     public func findSound(byId id: String) -> SoundItem? {
         soundLibrary.first(where: { $0.id == id })
-            ?? soundLibrary.first(where: { $0.fileName == id || $0.displayName == id })
+            ?? soundLibrary.first(where: {
+                $0.pressFileName == id || $0.releaseFileName == id || $0.displayName == id
+            })
     }
 
-    public func findSoundURL(for sound: SoundItem) -> URL? {
+    public func findSoundURL(for sound: SoundItem, event: KeyEventType = .down) -> URL? {
+        let fileName = sound.fileName(for: event)
         if sound.isBuiltIn {
-            let baseName = (sound.fileName as NSString).deletingPathExtension
+            let baseName = (fileName as NSString).deletingPathExtension
             for ext in ["wav", "mp3", "aiff", "m4a"] {
                 if let url = Bundle.main.url(forResource: baseName, withExtension: ext) { return url }
             }
         }
-        let url = catalogStore.soundsDirectoryURL.appendingPathComponent(sound.fileName)
+        let url = catalogStore.soundsDirectoryURL.appendingPathComponent(fileName)
         return FileManager.default.fileExists(atPath: url.path) ? url : nil
     }
 
@@ -183,128 +209,191 @@ public final class AppModel: ObservableObject {
     public func getSoundsDirectory() -> URL? { catalogStore.soundsDirectoryURL }
 
     public func importSound(from sourceURL: URL, displayName: String? = nil) throws -> SoundItem {
-        let allowedExtensions = ["wav", "mp3", "aiff", "aif", "m4a"]
-        let fileExtension = sourceURL.pathExtension.lowercased()
-        guard allowedExtensions.contains(fileExtension) else { throw ThocKeyError.unsupportedAudioFormat }
-        let values = try sourceURL.resourceValues(forKeys: [.fileSizeKey])
-        guard (values.fileSize ?? 0) <= 50 * 1_024 * 1_024 else { throw ThocKeyError.audioFileTooLarge }
-
+        let imported = try copyAudioToLibrary(from: sourceURL)
         let baseName = sourceURL.deletingPathExtension().lastPathComponent
-        let uniqueFileName = "\(safeFileName(baseName))_\(UUID().uuidString.prefix(8)).\(fileExtension)"
-        let destinationURL = catalogStore.soundsDirectoryURL.appendingPathComponent(uniqueFileName)
-        let accessed = sourceURL.startAccessingSecurityScopedResource()
-        defer { if accessed { sourceURL.stopAccessingSecurityScopedResource() } }
-
-        do {
-            try FileManager.default.copyItem(at: sourceURL, to: destinationURL)
-            let duration = try validateAudio(at: destinationURL)
-            let item = SoundItem(
-                displayName: normalizedName(displayName ?? baseName), fileName: uniqueFileName,
-                packName: "Custom", category: .custom, duration: duration, isBuiltIn: false
-            )
-            soundLibrary.append(item)
-            do { try persistCatalog() } catch {
-                soundLibrary.removeAll { $0.id == item.id }
-                try? FileManager.default.removeItem(at: destinationURL)
-                throw error
-            }
-            do { try playback?.preload(soundID: item.id, from: destinationURL) }
-            catch { logger.error("Imported sound preload failed: \(error.localizedDescription, privacy: .public)") }
-            return item
-        } catch {
-            try? FileManager.default.removeItem(at: destinationURL)
+        let item = SoundItem(
+            displayName: normalizedName(displayName ?? baseName),
+            pressFileName: imported.fileName,
+            pressDuration: imported.duration
+        )
+        soundLibrary.append(item)
+        do { try persistCatalog() } catch {
+            soundLibrary.removeAll { $0.id == item.id }
+            try? FileManager.default.removeItem(at: catalogStore.soundsDirectoryURL.appendingPathComponent(imported.fileName))
             throw error
         }
+        preload(sound: item, event: .down)
+        return item
     }
 
     public func renameSound(id: String, newDisplayName: String) throws {
         guard !newDisplayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw ThocKeyError.invalidName }
-        let name = normalizedName(newDisplayName)
         guard let index = soundLibrary.firstIndex(where: { $0.id == id }) else { throw ThocKeyError.soundNotFound }
         guard !soundLibrary[index].isBuiltIn else { throw ThocKeyError.builtInContentIsReadOnly }
-        let previous = soundLibrary[index].displayName
+        let oldSounds = soundLibrary
+        let oldPacks = customPacks
+        let name = normalizedName(newDisplayName)
         soundLibrary[index].displayName = name
-        do { try persistCatalog() } catch { soundLibrary[index].displayName = previous; throw error }
+        for packIndex in customPacks.indices where customPacks[packIndex].sourceSoundId == id {
+            customPacks[packIndex].name = name
+        }
+        updateActivePack()
+        do { try persistCatalog() } catch {
+            soundLibrary = oldSounds
+            customPacks = oldPacks
+            updateActivePack()
+            throw error
+        }
     }
 
     public func deleteSound(id: String) throws {
         guard let index = soundLibrary.firstIndex(where: { $0.id == id }) else { throw ThocKeyError.soundNotFound }
         let sound = soundLibrary[index]
         guard !sound.isBuiltIn else { throw ThocKeyError.builtInContentIsReadOnly }
-        let references = allPacks.filter { pack in
-            pack.defaultDownSoundId == id || pack.defaultUpSoundId == id || (packMappings[pack.id] ?? pack.keyMappings).values.contains(id)
-        }.map(\.name)
-        guard references.isEmpty else { throw ThocKeyError.soundInUse(references) }
 
-        let url = catalogStore.soundsDirectoryURL.appendingPathComponent(sound.fileName)
-        let stagedURL = catalogStore.soundsDirectoryURL.appendingPathComponent(".deleting-\(UUID().uuidString)-\(sound.fileName)")
-        let hasFile = FileManager.default.fileExists(atPath: url.path)
+        let blockingPacks = allPacks.filter { pack in
+            pack.sourceSoundId == nil &&
+                (pack.defaultSoundId == id || (packMappings[pack.id] ?? pack.keyMappings).values.contains(id))
+        }.map(\.name)
+        guard blockingPacks.isEmpty else { throw ThocKeyError.soundInUse(blockingPacks) }
+
+        let oldSounds = soundLibrary
+        let oldPacks = customPacks
+        let oldMappings = packMappings
+        let oldSelectedID = selectedPackID
+        let generatedIDs = Set(customPacks.filter { $0.sourceSoundId == id }.map(\.id))
+        customPacks.removeAll { generatedIDs.contains($0.id) }
+        generatedIDs.forEach { packMappings.removeValue(forKey: $0) }
+        if generatedIDs.contains(selectedPackID) { selectedPackID = BuiltInSoundData.defaultPackID }
+        soundLibrary.remove(at: index)
+        updateActivePack()
+
+        let remainingFiles = Set(soundLibrary.flatMap { [$0.pressFileName, $0.releaseFileName].compactMap { $0 } })
+        let removableFiles = Set([sound.pressFileName, sound.releaseFileName].compactMap { $0 }).subtracting(remainingFiles)
+        var staged: [(original: URL, staged: URL)] = []
         do {
-            if hasFile { try FileManager.default.moveItem(at: url, to: stagedURL) }
-            soundLibrary.remove(at: index)
-            try persistCatalog()
-            playback?.remove(soundID: id)
-        } catch {
-            if !soundLibrary.contains(where: { $0.id == sound.id }) { soundLibrary.insert(sound, at: index) }
-            if hasFile, FileManager.default.fileExists(atPath: stagedURL.path) {
-                try? FileManager.default.moveItem(at: stagedURL, to: url)
+            for fileName in removableFiles {
+                let original = catalogStore.soundsDirectoryURL.appendingPathComponent(fileName)
+                guard FileManager.default.fileExists(atPath: original.path) else { continue }
+                let stagedURL = catalogStore.soundsDirectoryURL.appendingPathComponent(".deleting-\(UUID().uuidString)-\(fileName)")
+                try FileManager.default.moveItem(at: original, to: stagedURL)
+                staged.append((original, stagedURL))
             }
+            try persistCatalog()
+        } catch {
+            soundLibrary = oldSounds
+            customPacks = oldPacks
+            packMappings = oldMappings
+            selectedPackID = oldSelectedID
+            updateActivePack()
+            for file in staged { try? FileManager.default.moveItem(at: file.staged, to: file.original) }
             throw error
         }
-        if hasFile {
-            do { try FileManager.default.removeItem(at: stagedURL) }
+        playback?.remove(soundID: playbackID(sound.id, .down))
+        playback?.remove(soundID: playbackID(sound.id, .up))
+        for file in staged {
+            do { try FileManager.default.removeItem(at: file.staged) }
             catch { logger.error("Could not remove staged sound file: \(error.localizedDescription, privacy: .public)") }
         }
     }
 
     public func saveTrimmedSound(
-        sourceSoundId: String, newDisplayName: String, packName: String = "Customized",
-        startTime: Double, endTime: Double, gain: Float = 1, applyFade: Bool = true
+        sourceSoundId: String, newDisplayName: String,
+        startTime: Double, endTime: Double, gain: Float = 1, applyFade: Bool = true,
+        replacingSoundId: String? = nil
     ) async throws -> SoundItem {
         guard endTime > startTime, startTime >= 0 else { throw ThocKeyError.invalidTrimRange }
-        guard let source = findSound(byId: sourceSoundId), let sourceURL = findSoundURL(for: source) else { throw ThocKeyError.soundNotFound }
-        guard !newDisplayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw ThocKeyError.invalidName }
-        let name = normalizedName(newDisplayName)
-        let outputURL = catalogStore.soundsDirectoryURL.appendingPathComponent("\(safeFileName(name))_\(UUID().uuidString.prefix(8)).wav")
+        guard let source = findSound(byId: sourceSoundId),
+              let sourceURL = findSoundURL(for: source) else { throw ThocKeyError.soundNotFound }
+        let name = try validatedName(newDisplayName)
+        let outputURL = makeOutputURL(name: name, suffix: "press")
         do {
             try AudioProcessingService.shared.trimAndExportAudio(
                 sourceURL: sourceURL, startTime: startTime, endTime: endTime,
                 gain: gain, applyMicroFade: applyFade, outputURL: outputURL
             )
-            let duration = try validateAudio(at: outputURL)
-            let item = SoundItem(displayName: name, fileName: outputURL.lastPathComponent, packName: packName, category: .trimmed, duration: duration)
-            soundLibrary.append(item)
-            do { try persistCatalog() } catch {
-                soundLibrary.removeAll { $0.id == item.id }
-                throw error
-            }
-            do { try playback?.preload(soundID: item.id, from: outputURL) }
-            catch { logger.error("Trimmed sound preload failed: \(error.localizedDescription, privacy: .public)") }
+            var item = SoundItem(
+                displayName: name, pressFileName: outputURL.lastPathComponent,
+                pressDuration: try validateAudio(at: outputURL)
+            )
+            item = try storeProcessedSound(item, replacingSoundId: replacingSoundId)
+            preload(sound: item, event: .down)
             return item
-        } catch { try? FileManager.default.removeItem(at: outputURL); throw error }
+        } catch {
+            try? FileManager.default.removeItem(at: outputURL)
+            throw error
+        }
     }
 
-    public func splitKeystrokeSound(
-        sourceSoundId: String, downName: String, upName: String,
-        downStart: Double, downEnd: Double, upStart: Double, upEnd: Double,
-        gain: Float = 1, applyFade: Bool = true
-    ) async throws -> (down: SoundItem, up: SoundItem) {
-        let down = try await saveTrimmedSound(
-            sourceSoundId: sourceSoundId, newDisplayName: downName,
-            startTime: downStart, endTime: downEnd, gain: gain, applyFade: applyFade
-        )
+    public func saveSplitSound(
+        sourceSoundId: String, displayName: String,
+        pressStart: Double, pressEnd: Double, releaseStart: Double, releaseEnd: Double,
+        gain: Float = 1, applyFade: Bool = true, replacingSoundId: String? = nil
+    ) async throws -> SoundItem {
+        guard pressEnd > pressStart, releaseEnd > releaseStart else { throw ThocKeyError.invalidTrimRange }
+        guard let source = findSound(byId: sourceSoundId),
+              let sourceURL = findSoundURL(for: source) else { throw ThocKeyError.soundNotFound }
+        let name = try validatedName(displayName)
+        let pressURL = makeOutputURL(name: name, suffix: "press")
+        let releaseURL = makeOutputURL(name: name, suffix: "release")
         do {
-            let up = try await saveTrimmedSound(
-                sourceSoundId: sourceSoundId, newDisplayName: upName,
-                startTime: upStart, endTime: upEnd, gain: gain, applyFade: applyFade
+            try AudioProcessingService.shared.trimAndExportAudio(
+                sourceURL: sourceURL, startTime: pressStart, endTime: pressEnd,
+                gain: gain, applyMicroFade: applyFade, outputURL: pressURL
             )
-            return (down, up)
-        } catch { try? deleteSound(id: down.id); throw error }
+            try AudioProcessingService.shared.trimAndExportAudio(
+                sourceURL: sourceURL, startTime: releaseStart, endTime: releaseEnd,
+                gain: gain, applyMicroFade: applyFade, outputURL: releaseURL
+            )
+            var item = SoundItem(
+                displayName: name,
+                pressFileName: pressURL.lastPathComponent,
+                releaseFileName: releaseURL.lastPathComponent,
+                pressDuration: try validateAudio(at: pressURL),
+                releaseDuration: try validateAudio(at: releaseURL)
+            )
+            item = try storeProcessedSound(item, replacingSoundId: replacingSoundId)
+            preload(sound: item, event: .down)
+            preload(sound: item, event: .up)
+            return item
+        } catch {
+            try? FileManager.default.removeItem(at: pressURL)
+            try? FileManager.default.removeItem(at: releaseURL)
+            throw error
+        }
+    }
+
+    public func attachReleaseAudio(to soundID: String, from sourceURL: URL) throws -> SoundItem {
+        guard let index = soundLibrary.firstIndex(where: { $0.id == soundID }) else { throw ThocKeyError.soundNotFound }
+        guard !soundLibrary[index].isBuiltIn else { throw ThocKeyError.builtInContentIsReadOnly }
+        let imported = try copyAudioToLibrary(from: sourceURL)
+        let previous = soundLibrary[index]
+        soundLibrary[index].releaseFileName = imported.fileName
+        soundLibrary[index].releaseDuration = imported.duration
+        do { try persistCatalog() } catch {
+            soundLibrary[index] = previous
+            try? FileManager.default.removeItem(at: catalogStore.soundsDirectoryURL.appendingPathComponent(imported.fileName))
+            throw error
+        }
+        let updated = soundLibrary[index]
+        preload(sound: updated, event: .up)
+        return updated
+    }
+
+    public func cleanupUnreferencedAudioFiles() {
+        let referenced = Set(soundLibrary.flatMap { [$0.pressFileName, $0.releaseFileName].compactMap { $0 } })
+        guard let files = try? FileManager.default.contentsOfDirectory(
+            at: catalogStore.soundsDirectoryURL, includingPropertiesForKeys: nil
+        ) else { return }
+        for url in files where !url.lastPathComponent.hasPrefix(".") && !referenced.contains(url.lastPathComponent) {
+            do { try FileManager.default.removeItem(at: url) }
+            catch { logger.error("Could not remove unused sound file: \(error.localizedDescription, privacy: .public)") }
+        }
     }
 
     public func saveCustomPack(_ pack: SoundPack) throws {
         guard !pack.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw ThocKeyError.invalidName }
-        guard findSound(byId: pack.defaultDownSoundId) != nil, findSound(byId: pack.defaultUpSoundId) != nil else { throw ThocKeyError.soundNotFound }
+        guard findSound(byId: pack.defaultSoundId) != nil else { throw ThocKeyError.soundNotFound }
         var savedPack = pack
         savedPack.name = normalizedName(pack.name)
         savedPack.isBuiltIn = false
@@ -323,19 +412,20 @@ public final class AppModel: ObservableObject {
 
     @discardableResult
     public func setActiveSound(sound: SoundItem) throws -> String {
-        if sound.isBuiltIn,
-           let matching = BuiltInSoundData.builtInPacks.first(where: { $0.defaultDownSoundId == sound.id || $0.name.localizedCaseInsensitiveContains(sound.packName) }) {
+        if let matching = BuiltInSoundData.builtInPacks.first(where: { $0.defaultSoundId == sound.id }) {
             selectPack(id: matching.id)
             return matching.name
         }
-        if let existing = customPacks.first(where: { $0.defaultDownSoundId == sound.id && $0.defaultUpSoundId == sound.id }) {
+        if let existing = customPacks.first(where: { $0.sourceSoundId == sound.id }) {
             selectPack(id: existing.id)
-            return existing.name
+            return sound.displayName
         }
-        let pack = SoundPack(name: "\(sound.displayName) Pack", defaultDownSoundId: sound.id, defaultUpSoundId: sound.id)
+        let pack = SoundPack(
+            name: sound.displayName, defaultSoundId: sound.id, sourceSoundId: sound.id
+        )
         try saveCustomPack(pack)
         selectPack(id: pack.id)
-        return pack.name
+        return sound.displayName
     }
 
     public func deleteCustomPack(id: String) throws {
@@ -354,7 +444,7 @@ public final class AppModel: ObservableObject {
     }
 
     public func deleteCustomPack(named name: String) {
-        guard let pack = customPacks.first(where: { $0.name == name }) else { return }
+        guard let pack = customPacks.first(where: { $0.name == name && $0.sourceSoundId == nil }) else { return }
         do { try deleteCustomPack(id: pack.id) } catch { present(error) }
     }
 
@@ -388,18 +478,17 @@ public final class AppModel: ObservableObject {
         }
     }
 
-    public func playPreview(soundId: String) {
-        guard let sound = findSound(byId: soundId), let url = findSoundURL(for: sound) else { return }
-        do { try playback?.play(soundID: sound.id, from: url) }
+    public func playPreview(soundId: String, event: KeyEventType = .down) {
+        guard let sound = findSound(byId: soundId), let url = findSoundURL(for: sound, event: event) else { return }
+        do { try playback?.play(soundID: playbackID(sound.id, event), from: url) }
         catch { logger.error("Preview failed: \(error.localizedDescription, privacy: .public)") }
     }
 
     public func playKeyEvent(type: KeyEventType, keyCode: UInt16? = nil, force: Bool = false) {
         guard isGlobalSoundEnabled || force else { return }
-        var soundID = type == .down ? activePack.defaultDownSoundId : activePack.defaultUpSoundId
-        if type == .down, let keyCode, let mapped = activePack.keyMappings[keyCode] { soundID = mapped }
-        guard let sound = findSound(byId: soundID), let url = findSoundURL(for: sound) else { return }
-        do { try playback?.play(soundID: sound.id, from: url) }
+        let soundID = keyCode.flatMap { activePack.keyMappings[$0] } ?? activePack.defaultSoundId
+        guard let sound = findSound(byId: soundID), let url = findSoundURL(for: sound, event: type) else { return }
+        do { try playback?.play(soundID: playbackID(sound.id, type), from: url) }
         catch { logger.error("Keystroke playback failed: \(error.localizedDescription, privacy: .public)") }
     }
 
@@ -409,20 +498,17 @@ public final class AppModel: ObservableObject {
 
     private func loadCatalogAndMigrate() {
         do {
-            if let catalog = try catalogStore.loadCatalog() {
-                soundLibrary = BuiltInSoundData.builtInSounds + catalog.sounds.filter { !$0.isBuiltIn && soundFileExists($0) }
-                customPacks = catalog.packs.filter { !$0.isBuiltIn }
-                packMappings = catalog.packMappings
-                selectedPackID = allPacks.contains(where: { $0.id == catalog.selectedPackID }) ? catalog.selectedPackID : BuiltInSoundData.defaultPackID
+            if let loaded = try catalogStore.loadCatalog() {
+                let catalog = loaded.schemaVersion < CatalogManifest.currentSchemaVersion ? migrateV1Catalog(loaded) : loaded
+                apply(catalog)
+                if loaded.schemaVersion < CatalogManifest.currentSchemaVersion { try persistCatalog() }
             } else {
                 let legacy = try catalogStore.loadLegacyCatalog()
-                soundLibrary = BuiltInSoundData.builtInSounds + legacy.sounds.filter { !$0.isBuiltIn && soundFileExists($0) }
-                customPacks = legacy.packs.map { pack in
-                    var migrated = pack
-                    migrated.id = UUID().uuidString
-                    migrated.isBuiltIn = false
-                    return migrated
-                }
+                let catalog = migrateV1Catalog(CatalogManifest(
+                    schemaVersion: 1, sounds: legacy.sounds, packs: legacy.packs,
+                    selectedPackID: BuiltInSoundData.defaultPackID
+                ))
+                apply(catalog)
                 migrateLegacyDefaults()
                 reconcileLooseAudioFiles()
                 try persistCatalog()
@@ -438,21 +524,109 @@ public final class AppModel: ObservableObject {
         }
     }
 
+    private func apply(_ catalog: CatalogManifest) {
+        soundLibrary = BuiltInSoundData.builtInSounds + catalog.sounds.filter { !$0.isBuiltIn && soundFileExists($0) }
+        customPacks = catalog.packs.filter { !$0.isBuiltIn }
+        packMappings = catalog.packMappings.mapValues { mapping in
+            mapping.mapValues(BuiltInSoundData.unifiedID(forLegacyID:))
+        }
+        selectedPackID = allPacks.contains(where: { $0.id == catalog.selectedPackID })
+            ? catalog.selectedPackID : BuiltInSoundData.defaultPackID
+    }
+
+    private func migrateV1Catalog(_ catalog: CatalogManifest) -> CatalogManifest {
+        let legacySounds = catalog.sounds.filter { !$0.isBuiltIn }
+        let byID = Dictionary(uniqueKeysWithValues: legacySounds.map { ($0.id, $0) })
+        var migratedPacks: [SoundPack] = []
+        var combinedSounds: [SoundItem] = []
+        var combinedIDsByPair: [String: String] = [:]
+        var consumedIDs = Set<String>()
+        var independentlyReferencedIDs = Set(catalog.packMappings.values.flatMap(\.values))
+
+        for var pack in catalog.packs where !pack.isBuiltIn {
+            let rawPressID = pack.defaultSoundId
+            let rawReleaseID = pack.legacyDefaultUpSoundId ?? rawPressID
+            let pressID = BuiltInSoundData.unifiedID(forLegacyID: rawPressID)
+            let releaseID = BuiltInSoundData.unifiedID(forLegacyID: rawReleaseID)
+
+            if pressID == releaseID {
+                pack.defaultSoundId = pressID
+                independentlyReferencedIDs.insert(rawPressID)
+            } else if let press = byID[rawPressID], let release = byID[rawReleaseID] {
+                let pairKey = "\(rawPressID)|\(rawReleaseID)"
+                let combinedID: String
+                if let existing = combinedIDsByPair[pairKey] {
+                    combinedID = existing
+                } else {
+                    combinedID = UUID().uuidString
+                    combinedIDsByPair[pairKey] = combinedID
+                    combinedSounds.append(SoundItem(
+                        id: combinedID,
+                        displayName: legacyPairName(press: press, release: release, fallback: pack.name),
+                        pressFileName: press.pressFileName,
+                        releaseFileName: release.pressFileName,
+                        pressDuration: press.pressDuration,
+                        releaseDuration: release.pressDuration
+                    ))
+                }
+                pack.defaultSoundId = combinedID
+                consumedIDs.formUnion([rawPressID, rawReleaseID])
+            } else {
+                pack.defaultSoundId = pressID
+                independentlyReferencedIDs.insert(rawPressID)
+            }
+            pack.keyMappings = pack.keyMappings.mapValues(BuiltInSoundData.unifiedID(forLegacyID:))
+            pack.legacyDefaultUpSoundId = nil
+            migratedPacks.append(pack)
+        }
+
+        let preservedSounds = legacySounds.filter {
+            !consumedIDs.contains($0.id) || independentlyReferencedIDs.contains($0.id)
+        }
+        let mappings = catalog.packMappings.mapValues { mapping in
+            mapping.mapValues(BuiltInSoundData.unifiedID(forLegacyID:))
+        }
+        return CatalogManifest(
+            sounds: preservedSounds + combinedSounds,
+            packs: migratedPacks,
+            selectedPackID: catalog.selectedPackID,
+            packMappings: mappings
+        )
+    }
+
+    private func legacyPairName(press: SoundItem, release: SoundItem, fallback: String) -> String {
+        let pattern = #"\s*\((Down|Up)\)$"#
+        let pressBase = press.displayName.replacingOccurrences(of: pattern, with: "", options: [.regularExpression, .caseInsensitive])
+        let releaseBase = release.displayName.replacingOccurrences(of: pattern, with: "", options: [.regularExpression, .caseInsensitive])
+        if !pressBase.isEmpty, pressBase.caseInsensitiveCompare(releaseBase) == .orderedSame { return pressBase }
+        return normalizedName(fallback.replacingOccurrences(of: " Pack", with: ""))
+    }
+
     private func migrateLegacyDefaults() {
         let selectedName = userDefaults.string(forKey: Keys.legacySelectedPackName) ?? BuiltInSoundData.builtInPacks[0].name
         selectedPackID = allPacks.first(where: { $0.name == selectedName })?.id ?? BuiltInSoundData.defaultPackID
         for pack in allPacks {
             if let data = userDefaults.data(forKey: "customMappings_\(pack.name)"),
-               let mappings = try? JSONDecoder().decode([UInt16: String].self, from: data) { packMappings[pack.id] = mappings }
-            else if !pack.keyMappings.isEmpty { packMappings[pack.id] = pack.keyMappings }
+               let mappings = try? JSONDecoder().decode([UInt16: String].self, from: data) {
+                packMappings[pack.id] = mappings.mapValues(BuiltInSoundData.unifiedID(forLegacyID:))
+            } else if !pack.keyMappings.isEmpty {
+                packMappings[pack.id] = pack.keyMappings
+            }
         }
     }
 
     private func reconcileLooseAudioFiles() {
-        guard let files = try? FileManager.default.contentsOfDirectory(at: catalogStore.soundsDirectoryURL, includingPropertiesForKeys: nil) else { return }
+        guard let files = try? FileManager.default.contentsOfDirectory(
+            at: catalogStore.soundsDirectoryURL, includingPropertiesForKeys: nil
+        ) else { return }
+        let referencedFiles = Set(soundLibrary.flatMap { [$0.pressFileName, $0.releaseFileName].compactMap { $0 } })
         for file in files where ["wav", "mp3", "aiff", "aif", "m4a"].contains(file.pathExtension.lowercased()) {
-            guard !soundLibrary.contains(where: { $0.fileName == file.lastPathComponent }), let duration = try? validateAudio(at: file) else { continue }
-            soundLibrary.append(SoundItem(displayName: normalizedName(file.deletingPathExtension().lastPathComponent), fileName: file.lastPathComponent, duration: duration))
+            guard !referencedFiles.contains(file.lastPathComponent), let duration = try? validateAudio(at: file) else { continue }
+            soundLibrary.append(SoundItem(
+                displayName: normalizedName(file.deletingPathExtension().lastPathComponent),
+                pressFileName: file.lastPathComponent,
+                pressDuration: duration
+            ))
         }
     }
 
@@ -463,12 +637,72 @@ public final class AppModel: ObservableObject {
         ))
     }
 
+    private func storeProcessedSound(_ newSound: SoundItem, replacingSoundId: String?) throws -> SoundItem {
+        guard let replacingSoundId,
+              let index = soundLibrary.firstIndex(where: { $0.id == replacingSoundId }),
+              !soundLibrary[index].isBuiltIn else {
+            soundLibrary.append(newSound)
+            do { try persistCatalog() } catch {
+                soundLibrary.removeAll { $0.id == newSound.id }
+                throw error
+            }
+            return newSound
+        }
+
+        let previousSound = soundLibrary[index]
+        let previousPacks = customPacks
+        var replacement = newSound
+        replacement.id = previousSound.id
+        soundLibrary[index] = replacement
+        for packIndex in customPacks.indices where customPacks[packIndex].sourceSoundId == replacement.id {
+            customPacks[packIndex].name = replacement.displayName
+        }
+        updateActivePack()
+        do { try persistCatalog() } catch {
+            soundLibrary[index] = previousSound
+            customPacks = previousPacks
+            updateActivePack()
+            throw error
+        }
+        return replacement
+    }
+
     private func preloadActivePack() {
-        let ids = Set([activePack.defaultDownSoundId, activePack.defaultUpSoundId] + Array(activePack.keyMappings.values))
+        let ids = Set([activePack.defaultSoundId] + Array(activePack.keyMappings.values))
         for id in ids {
-            guard let sound = findSound(byId: id), let url = findSoundURL(for: sound) else { continue }
-            do { try playback?.preload(soundID: id, from: url) }
-            catch { logger.error("Preload failed: \(error.localizedDescription, privacy: .public)") }
+            guard let sound = findSound(byId: id) else { continue }
+            preload(sound: sound, event: .down)
+            preload(sound: sound, event: .up)
+        }
+    }
+
+    private func preload(sound: SoundItem, event: KeyEventType) {
+        guard let url = findSoundURL(for: sound, event: event) else { return }
+        do { try playback?.preload(soundID: playbackID(sound.id, event), from: url) }
+        catch { logger.error("Preload failed: \(error.localizedDescription, privacy: .public)") }
+    }
+
+    private func playbackID(_ soundID: String, _ event: KeyEventType) -> String {
+        "\(soundID):\(event == .down ? "press" : "release")"
+    }
+
+    private func copyAudioToLibrary(from sourceURL: URL) throws -> (fileName: String, duration: Double) {
+        let allowedExtensions = ["wav", "mp3", "aiff", "aif", "m4a"]
+        let fileExtension = sourceURL.pathExtension.lowercased()
+        guard allowedExtensions.contains(fileExtension) else { throw ThocKeyError.unsupportedAudioFormat }
+        let values = try sourceURL.resourceValues(forKeys: [.fileSizeKey])
+        guard (values.fileSize ?? 0) <= 50 * 1_024 * 1_024 else { throw ThocKeyError.audioFileTooLarge }
+        let baseName = sourceURL.deletingPathExtension().lastPathComponent
+        let fileName = "\(safeFileName(baseName))_\(UUID().uuidString.prefix(8)).\(fileExtension)"
+        let destinationURL = catalogStore.soundsDirectoryURL.appendingPathComponent(fileName)
+        let accessed = sourceURL.startAccessingSecurityScopedResource()
+        defer { if accessed { sourceURL.stopAccessingSecurityScopedResource() } }
+        do {
+            try FileManager.default.copyItem(at: sourceURL, to: destinationURL)
+            return (fileName, try validateAudio(at: destinationURL))
+        } catch {
+            try? FileManager.default.removeItem(at: destinationURL)
+            throw error
         }
     }
 
@@ -485,12 +719,30 @@ public final class AppModel: ObservableObject {
     }
 
     private func soundFileExists(_ sound: SoundItem) -> Bool {
-        FileManager.default.fileExists(atPath: catalogStore.soundsDirectoryURL.appendingPathComponent(sound.fileName).path)
+        let pressExists = FileManager.default.fileExists(
+            atPath: catalogStore.soundsDirectoryURL.appendingPathComponent(sound.pressFileName).path
+        )
+        guard pressExists else { return false }
+        guard let releaseFileName = sound.releaseFileName else { return true }
+        return FileManager.default.fileExists(
+            atPath: catalogStore.soundsDirectoryURL.appendingPathComponent(releaseFileName).path
+        )
+    }
+
+    private func validatedName(_ value: String) throws -> String {
+        guard !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { throw ThocKeyError.invalidName }
+        return normalizedName(value)
     }
 
     private func normalizedName(_ value: String) -> String {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? "Untitled Sound" : trimmed
+    }
+
+    private func makeOutputURL(name: String, suffix: String) -> URL {
+        catalogStore.soundsDirectoryURL.appendingPathComponent(
+            "\(safeFileName(name))_\(suffix)_\(UUID().uuidString.prefix(8)).wav"
+        )
     }
 
     private func safeFileName(_ value: String) -> String {

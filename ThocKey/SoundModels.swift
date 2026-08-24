@@ -3,80 +3,147 @@ import Foundation
 public enum SoundCategory: String, Codable, CaseIterable, Identifiable {
     case builtIn = "Built-in"
     case custom = "Custom"
-    case trimmed = "Customized"
-    
+
     public var id: String { rawValue }
+
+    public init(from decoder: Decoder) throws {
+        let value = try decoder.singleValueContainer().decode(String.self)
+        self = value == "Built-in" ? .builtIn : .custom
+    }
 }
 
 public struct SoundItem: Identifiable, Codable, Hashable {
     public var id: String
     public var displayName: String
-    public var fileName: String
-    public var packName: String
+    public var pressFileName: String
+    public var releaseFileName: String?
+    public var pressDuration: Double
+    public var releaseDuration: Double?
     public var category: SoundCategory
-    public var duration: Double
     public var isBuiltIn: Bool
-    
+
     public init(
         id: String = UUID().uuidString,
         displayName: String,
-        fileName: String,
-        packName: String = "Custom",
+        pressFileName: String,
+        releaseFileName: String? = nil,
+        pressDuration: Double = 0,
+        releaseDuration: Double? = nil,
         category: SoundCategory = .custom,
-        duration: Double = 0.0,
         isBuiltIn: Bool = false
     ) {
         self.id = id
         self.displayName = displayName
-        self.fileName = fileName
-        self.packName = packName
+        self.pressFileName = pressFileName
+        self.releaseFileName = releaseFileName
+        self.pressDuration = pressDuration
+        self.releaseDuration = releaseDuration
         self.category = category
-        self.duration = duration
         self.isBuiltIn = isBuiltIn
+    }
+
+    public func fileName(for event: KeyEventType) -> String {
+        event == .up ? (releaseFileName ?? pressFileName) : pressFileName
+    }
+
+    public func duration(for event: KeyEventType) -> Double {
+        event == .up ? (releaseDuration ?? pressDuration) : pressDuration
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, displayName, pressFileName, releaseFileName, pressDuration, releaseDuration
+        case category, isBuiltIn
+        case fileName, duration
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decodeIfPresent(String.self, forKey: .id) ?? UUID().uuidString
+        displayName = try container.decode(String.self, forKey: .displayName)
+        pressFileName = try container.decodeIfPresent(String.self, forKey: .pressFileName)
+            ?? container.decode(String.self, forKey: .fileName)
+        releaseFileName = try container.decodeIfPresent(String.self, forKey: .releaseFileName)
+        pressDuration = try container.decodeIfPresent(Double.self, forKey: .pressDuration)
+            ?? container.decodeIfPresent(Double.self, forKey: .duration) ?? 0
+        releaseDuration = try container.decodeIfPresent(Double.self, forKey: .releaseDuration)
+        category = try container.decodeIfPresent(SoundCategory.self, forKey: .category) ?? .custom
+        isBuiltIn = try container.decodeIfPresent(Bool.self, forKey: .isBuiltIn) ?? false
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(displayName, forKey: .displayName)
+        try container.encode(pressFileName, forKey: .pressFileName)
+        try container.encodeIfPresent(releaseFileName, forKey: .releaseFileName)
+        try container.encode(pressDuration, forKey: .pressDuration)
+        try container.encodeIfPresent(releaseDuration, forKey: .releaseDuration)
+        try container.encode(category, forKey: .category)
+        try container.encode(isBuiltIn, forKey: .isBuiltIn)
     }
 }
 
 public struct SoundPack: Identifiable, Codable, Hashable {
     public var id: String
     public var name: String
-    public var defaultDownSoundId: String
-    public var defaultUpSoundId: String
-    public var keyMappings: [UInt16: String] // keyCode -> soundId
+    public var defaultSoundId: String
+    public var keyMappings: [UInt16: String]
     public var isBuiltIn: Bool
-    
+    public var sourceSoundId: String?
+
+    var legacyDefaultUpSoundId: String?
+
     public init(
         id: String = UUID().uuidString,
         name: String,
-        defaultDownSoundId: String,
-        defaultUpSoundId: String,
+        defaultSoundId: String,
         keyMappings: [UInt16: String] = [:],
-        isBuiltIn: Bool = false
+        isBuiltIn: Bool = false,
+        sourceSoundId: String? = nil
     ) {
         self.id = id
         self.name = name
-        self.defaultDownSoundId = defaultDownSoundId
-        self.defaultUpSoundId = defaultUpSoundId
+        self.defaultSoundId = defaultSoundId
         self.keyMappings = keyMappings
         self.isBuiltIn = isBuiltIn
+        self.sourceSoundId = sourceSoundId
+        self.legacyDefaultUpSoundId = nil
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, name, defaultDownSoundId, defaultUpSoundId, keyMappings, isBuiltIn
+        case id, name, defaultSoundId, keyMappings, isBuiltIn, sourceSoundId
+        case defaultDownSoundId, defaultUpSoundId
     }
 
     public init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decodeIfPresent(String.self, forKey: .id) ?? UUID().uuidString
         name = try container.decode(String.self, forKey: .name)
-        defaultDownSoundId = try container.decode(String.self, forKey: .defaultDownSoundId)
-        defaultUpSoundId = try container.decode(String.self, forKey: .defaultUpSoundId)
+        if let currentID = try container.decodeIfPresent(String.self, forKey: .defaultSoundId) {
+            defaultSoundId = currentID
+            legacyDefaultUpSoundId = nil
+        } else {
+            defaultSoundId = try container.decode(String.self, forKey: .defaultDownSoundId)
+            legacyDefaultUpSoundId = try container.decodeIfPresent(String.self, forKey: .defaultUpSoundId)
+        }
         keyMappings = try container.decodeIfPresent([UInt16: String].self, forKey: .keyMappings) ?? [:]
         isBuiltIn = try container.decodeIfPresent(Bool.self, forKey: .isBuiltIn) ?? false
+        sourceSoundId = try container.decodeIfPresent(String.self, forKey: .sourceSoundId)
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(name, forKey: .name)
+        try container.encode(defaultSoundId, forKey: .defaultSoundId)
+        try container.encode(keyMappings, forKey: .keyMappings)
+        try container.encode(isBuiltIn, forKey: .isBuiltIn)
+        try container.encodeIfPresent(sourceSoundId, forKey: .sourceSoundId)
     }
 }
 
 public struct CatalogManifest: Codable, Equatable {
-    public static let currentSchemaVersion = 1
+    public static let currentSchemaVersion = 2
 
     public var schemaVersion: Int
     public var sounds: [SoundItem]
@@ -112,117 +179,56 @@ public struct CatalogManifest: Codable, Equatable {
     }
 }
 
-// Built-in Sound and Pack Constants
 public enum BuiltInSoundData {
     public static let defaultPackID = "00000000-0000-4000-8000-000000000001"
 
     public static let builtInSounds: [SoundItem] = [
         SoundItem(
-            id: "builtin_thock_down",
-            displayName: "Thock (Down)",
-            fileName: "thock_down",
-            packName: "Thocky",
-            category: .builtIn,
-            duration: 0.09,
-            isBuiltIn: true
+            id: "builtin_thock", displayName: "Thocky (Original)",
+            pressFileName: "thock_down", releaseFileName: "thock_up",
+            pressDuration: 0.09, releaseDuration: 0.09,
+            category: .builtIn, isBuiltIn: true
         ),
         SoundItem(
-            id: "builtin_thock_up",
-            displayName: "Thock (Up)",
-            fileName: "thock_up",
-            packName: "Thocky",
-            category: .builtIn,
-            duration: 0.09,
-            isBuiltIn: true
+            id: "builtin_creamy", displayName: "Creamy", pressFileName: "creamy_key",
+            pressDuration: 0.06, category: .builtIn, isBuiltIn: true
         ),
         SoundItem(
-            id: "builtin_creamy_down",
-            displayName: "Creamy (Down)",
-            fileName: "creamy_key",
-            packName: "Creamy",
-            category: .builtIn,
-            duration: 0.06,
-            isBuiltIn: true
+            id: "builtin_clicky", displayName: "Clicky", pressFileName: "clicky_key",
+            pressDuration: 0.07, category: .builtIn, isBuiltIn: true
         ),
         SoundItem(
-            id: "builtin_creamy_up",
-            displayName: "Creamy (Up)",
-            fileName: "creamy_key",
-            packName: "Creamy",
-            category: .builtIn,
-            duration: 0.06,
-            isBuiltIn: true
-        ),
-        SoundItem(
-            id: "builtin_clicky_down",
-            displayName: "Clicky (Down)",
-            fileName: "clicky_key",
-            packName: "Clicky",
-            category: .builtIn,
-            duration: 0.07,
-            isBuiltIn: true
-        ),
-        SoundItem(
-            id: "builtin_clicky_up",
-            displayName: "Clicky (Up)",
-            fileName: "clicky_key",
-            packName: "Clicky",
-            category: .builtIn,
-            duration: 0.07,
-            isBuiltIn: true
-        ),
-        SoundItem(
-            id: "builtin_quiet_down",
-            displayName: "Quiet (Down)",
-            fileName: "quiet_key",
-            packName: "Quiet",
-            category: .builtIn,
-            duration: 0.06,
-            isBuiltIn: true
-        ),
-        SoundItem(
-            id: "builtin_quiet_up",
-            displayName: "Quiet (Up)",
-            fileName: "quiet_key",
-            packName: "Quiet",
-            category: .builtIn,
-            duration: 0.06,
-            isBuiltIn: true
+            id: "builtin_quiet", displayName: "Quiet", pressFileName: "quiet_key",
+            pressDuration: 0.06, category: .builtIn, isBuiltIn: true
         )
     ]
-    
+
     public static let builtInPacks: [SoundPack] = [
         SoundPack(
-            id: defaultPackID,
-            name: "Thocky (Default)",
-            defaultDownSoundId: "builtin_thock_down",
-            defaultUpSoundId: "builtin_thock_up",
-            keyMappings: [:],
+            id: defaultPackID, name: "Thocky (Default)", defaultSoundId: "builtin_thock",
             isBuiltIn: true
         ),
         SoundPack(
-            id: "00000000-0000-4000-8000-000000000002",
-            name: "Creamy",
-            defaultDownSoundId: "builtin_creamy_down",
-            defaultUpSoundId: "builtin_creamy_up",
-            keyMappings: [:],
-            isBuiltIn: true
+            id: "00000000-0000-4000-8000-000000000002", name: "Creamy",
+            defaultSoundId: "builtin_creamy", isBuiltIn: true
         ),
         SoundPack(
-            id: "00000000-0000-4000-8000-000000000003",
-            name: "Clicky",
-            defaultDownSoundId: "builtin_clicky_down",
-            defaultUpSoundId: "builtin_clicky_up",
-            keyMappings: [:],
-            isBuiltIn: true
+            id: "00000000-0000-4000-8000-000000000003", name: "Clicky",
+            defaultSoundId: "builtin_clicky", isBuiltIn: true
         ),
         SoundPack(
-            id: "00000000-0000-4000-8000-000000000004",
-            name: "Quiet",
-            defaultDownSoundId: "builtin_quiet_down",
-            defaultUpSoundId: "builtin_quiet_up",
-            keyMappings: [:],
-            isBuiltIn: true
+            id: "00000000-0000-4000-8000-000000000004", name: "Quiet",
+            defaultSoundId: "builtin_quiet", isBuiltIn: true
         )
     ]
+
+    public static func unifiedID(forLegacyID id: String) -> String {
+        switch id {
+        case "builtin_thock_down", "builtin_thock_up", "builtin_thock": "builtin_thock"
+        case "builtin_creamy_down", "builtin_creamy_up", "builtin_creamy": "builtin_creamy"
+        case "builtin_clicky_down", "builtin_clicky_up", "builtin_clicky": "builtin_clicky"
+        case "builtin_quiet_down", "builtin_quiet_up", "builtin_quiet": "builtin_quiet"
+        default: id
+        }
+    }
 }

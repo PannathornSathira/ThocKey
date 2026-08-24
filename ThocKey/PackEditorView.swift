@@ -6,8 +6,7 @@ public struct PackEditorView: View {
     @ObservedObject private var appModel = AppModel.shared
 
     @State private var packName = "My Custom Pack"
-    @State private var defaultDownSoundID = "builtin_thock_down"
-    @State private var defaultUpSoundID = "builtin_thock_up"
+    @State private var defaultSoundID = "builtin_thock"
     @State private var spaceSoundID = "None"
     @State private var enterSoundID = "None"
     @State private var backspaceSoundID = "None"
@@ -44,11 +43,8 @@ public struct PackEditorView: View {
                     }
 
                     EditorSection(title: "Default sounds") {
-                        VStack(spacing: StudioTheme.Spacing.medium) {
-                            SoundPickerView(title: "Key Down", selectionSoundId: $defaultDownSoundID, includeDefaultOption: false)
-                            Divider().overlay(StudioTheme.separator)
-                            SoundPickerView(title: "Key Up", selectionSoundId: $defaultUpSoundID, includeDefaultOption: false)
-                        }
+                        SoundPickerView(title: "Default Sound", selectionSoundId: $defaultSoundID, includeDefaultOption: false)
+                            .accessibilityIdentifier("default-sound-picker")
                     }
 
                     EditorSection(title: "Special keys") {
@@ -81,7 +77,7 @@ public struct PackEditorView: View {
         panel.canChooseDirectories = false
         panel.allowedContentTypes = [.wav, .mp3, .aiff, .mpeg4Audio]
         guard panel.runModal() == .OK, let url = panel.url else { return }
-        do { defaultDownSoundID = try appModel.importSound(from: url).id }
+        do { defaultSoundID = try appModel.importSound(from: url).id }
         catch { appModel.present(error) }
     }
 
@@ -93,8 +89,7 @@ public struct PackEditorView: View {
         if escapeSoundID != "None" { mappings[53] = escapeSoundID }
         let pack = SoundPack(
             name: packName,
-            defaultDownSoundId: defaultDownSoundID,
-            defaultUpSoundId: defaultUpSoundID,
+            defaultSoundId: defaultSoundID,
             keyMappings: mappings
         )
         do {

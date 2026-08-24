@@ -4,16 +4,19 @@ import AppKit
 @main
 struct ThocKeyApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @ObservedObject private var appModel = AppModel.shared
 
     var body: some Scene {
         WindowGroup("ThocKey Studio", id: "studio") {
             ContentView()
                 .frame(idealWidth: 1100, idealHeight: 760)
+                .preferredColorScheme(appModel.appearancePreference.colorScheme)
         }
         .defaultSize(width: 1100, height: 760)
         
         MenuBarExtra("ThocKey", systemImage: "keyboard") {
             MenuBarOptions()
+                .preferredColorScheme(appModel.appearancePreference.colorScheme)
         }
     }
 }
@@ -30,9 +33,18 @@ struct MenuBarOptions: View {
         Divider()
         
         Menu("Active Pack: \(appModel.selectedSoundPackName)") {
-            ForEach(appModel.allPacks) { pack in
+            ForEach(appModel.selectablePacks) { pack in
                 Button(pack.name) {
                     appModel.selectPack(id: pack.id)
+                }
+            }
+            if !appModel.customSounds.isEmpty {
+                Divider()
+                ForEach(appModel.customSounds) { sound in
+                    Button(sound.displayName) {
+                        do { try appModel.setActiveSound(sound: sound) }
+                        catch { appModel.present(error) }
+                    }
                 }
             }
         }
