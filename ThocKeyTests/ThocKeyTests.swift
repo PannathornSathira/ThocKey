@@ -297,6 +297,83 @@ final class ThocKeyTests: XCTestCase {
         }
     }
 
+    func testFavoritePacks_ToggleAndPersistCorrectly() {
+        let model = makeModel()
+        let packID = BuiltInSoundData.defaultPackID
+        XCTAssertFalse(model.isFavorite(packID: packID))
+
+        model.toggleFavorite(packID: packID)
+        XCTAssertTrue(model.isFavorite(packID: packID))
+        XCTAssertTrue(model.favoritePacks.contains(where: { $0.id == packID }))
+
+        // Verify across model instances
+        let model2 = makeModel()
+        XCTAssertTrue(model2.isFavorite(packID: packID))
+
+        model2.toggleFavorite(packID: packID)
+        XCTAssertFalse(model2.isFavorite(packID: packID))
+    }
+
+    func testSnooze_PauseAndResumeSuppressesKeystrokes() {
+        let player = MockAudioPlayer()
+        let model = AppModel(catalogStore: store, playback: player, keyboardMonitor: MockKeyboardMonitor(), userDefaults: defaults)
+
+        XCTAssertFalse(model.isPaused)
+        model.pauseSounds(for: 900)
+        XCTAssertTrue(model.isPaused)
+        XCTAssertEqual(model.pauseRemainingSeconds, 900)
+        XCTAssertEqual(model.pauseRemainingFormatted, "15:00")
+
+        model.playKeyEvent(type: .down, keyCode: 49)
+        XCTAssertTrue(player.playedSoundIDs.isEmpty, "Keystrokes should be silenced while paused")
+
+        model.resumeSounds()
+        XCTAssertFalse(model.isPaused)
+        XCTAssertEqual(model.pauseRemainingSeconds, 0)
+
+        model.playKeyEvent(type: .down, keyCode: 49)
+        XCTAssertFalse(player.playedSoundIDs.isEmpty, "Keystrokes should play after resuming")
+    }
+
+    func testSoundCategory_CustomizedDecodingAndHandling() throws {
+        let json = """
+        {"id":"test1","displayName":"Trimmed Sound","pressFileName":"press.wav","pressDuration":0.05,"category":"Customized","isBuiltIn":false}
+        """
+        let item = try JSONDecoder().decode(SoundItem.self, from: Data(json.utf8))
+        XCTAssertEqual(item.category, .customized)
+
+        let encoded = try JSONEncoder().encode(item)
+        let decoded = try JSONDecoder().decode(SoundItem.self, from: encoded)
+        XCTAssertEqual(decoded.category, .customized)
+    }
+
+    func testModifierKeyMapping_ResolvesLeftAndRightKeyCodes() {
+        let player = MockAudioPlayer()
+        let model = AppModel(catalogStore: store, playback: player, keyboardMonitor: MockKeyboardMonitor(), userDefaults: defaults)
+
+        // Map Left Command (55) to clicky
+        model.setMapping(for: 55, soundId: "builtin_clicky")
+
+        // Pressing Left Command (55)
+        model.playKeyEvent(type: .down, keyCode: 55)
+        XCTAssertEqual(player.playedSoundIDs.last, "builtin_clicky:press")
+
+        // Pressing Right Command (54) should fallback to Left Command mapping
+        model.playKeyEvent(type: .down, keyCode: 54)
+        XCTAssertEqual(player.playedSoundIDs.last, "builtin_clicky:press")
+    }
+
+    func testStudioTab_SelectionAndRouting() {
+        let model = makeModel()
+        XCTAssertEqual(model.selectedTab, .packs)
+
+        model.selectedTab = .settings
+        XCTAssertEqual(model.selectedTab, .settings)
+
+        model.selectedTab = .keyMapping
+        XCTAssertEqual(model.selectedTab, .keyMapping)
+    }
+
     private func makeModel() -> AppModel {
         AppModel(catalogStore: store, playback: MockAudioPlayer(), keyboardMonitor: MockKeyboardMonitor(), userDefaults: defaults)
     }

@@ -3,17 +3,16 @@ import SwiftUI
 
 public struct ContentView: View {
     @ObservedObject private var appModel = AppModel.shared
-    @State private var selectedTab: StudioTab = .packs
     @State private var isShowingPackEditor = false
 
     public init() {}
 
     public var body: some View {
         HStack(spacing: 0) {
-            StudioSidebar(selection: $selectedTab, isAccessibilityEnabled: appModel.isAccessibilityEnabled)
+            StudioSidebar(selection: $appModel.selectedTab, isAccessibilityEnabled: appModel.isAccessibilityEnabled)
             Divider().overlay(StudioTheme.separator)
             Group {
-                switch selectedTab {
+                switch appModel.selectedTab {
                 case .packs:
                     PacksStudioView(isShowingPackEditor: $isShowingPackEditor)
                 case .keyMapping:
@@ -79,6 +78,17 @@ private struct PacksStudioView: View {
                                 .tracking(0.8)
                                 .foregroundStyle(StudioTheme.walnut)
                             Spacer()
+                            Button {
+                                appModel.toggleFavorite(packID: appModel.selectedPackID)
+                            } label: {
+                                Image(systemName: appModel.isFavorite(packID: appModel.selectedPackID) ? "star.fill" : "star")
+                                    .foregroundStyle(appModel.isFavorite(packID: appModel.selectedPackID) ? StudioTheme.caramel : StudioTheme.secondaryText)
+                                    .font(.system(size: 13))
+                            }
+                            .buttonStyle(.plain)
+                            .help(appModel.isFavorite(packID: appModel.selectedPackID) ? "Remove from favorites" : "Add to favorites")
+                            .accessibilityLabel("Favorite sound pack")
+
                             HStack(spacing: 4) {
                                 Circle()
                                     .fill(StudioTheme.moss)
@@ -286,9 +296,20 @@ private struct ActiveSoundRow: View {
 
 private struct KeyMappingsStudioView: View {
     @ObservedObject private var appModel = AppModel.shared
-    private let keys: [(String, UInt16, String)] = [
-        ("Space Bar", 49, "space"), ("Return / Enter", 36, "return"),
-        ("Backspace / Delete", 51, "delete.left"), ("Escape", 53, "escape"), ("Tab", 48, "arrow.right.to.line")
+    private let specialKeys: [(String, UInt16, String)] = [
+        ("Space Bar", 49, "space"),
+        ("Return / Enter", 36, "return"),
+        ("Backspace / Delete", 51, "delete.left"),
+        ("Escape", 53, "escape"),
+        ("Tab", 48, "arrow.right.to.line")
+    ]
+
+    private let modifierKeys: [(String, UInt16, String)] = [
+        ("Command (⌘)", 55, "command"),
+        ("Shift (⇧)", 56, "shift"),
+        ("Option / Alt (⌥)", 58, "option"),
+        ("Control (⌃)", 59, "control"),
+        ("Caps Lock (⇪)", 57, "capslock")
     ]
 
     var body: some View {
@@ -296,42 +317,69 @@ private struct KeyMappingsStudioView: View {
             VStack(alignment: .leading, spacing: StudioTheme.Spacing.large) {
                 StudioSectionHeader(
                     title: "Key Mappings",
-                    subtitle: "Give special keys their own sound in \(appModel.activePack.name)."
+                    subtitle: "Give special keys and modifiers their own sound in \(appModel.activePack.name)."
                 ) {
                     Button("Reset Mappings") { appModel.resetMappings() }
                         .buttonStyle(SecondaryButtonStyle())
                 }
 
-                StudioSurface {
-                    VStack(spacing: 0) {
-                        ForEach(Array(keys.enumerated()), id: \.element.1) { index, key in
-                            HStack(spacing: StudioTheme.Spacing.medium) {
-                                Image(systemName: key.2)
-                                    .foregroundStyle(StudioTheme.walnut)
-                                    .frame(width: 28)
-                                Text(key.0)
-                                    .font(.system(size: 14, weight: .medium))
-                                    .foregroundStyle(StudioTheme.espresso)
-                                Spacer()
-                                SoundPickerView(
-                                    title: "",
-                                    selectionSoundId: Binding(
-                                        get: { appModel.activePack.keyMappings[key.1] ?? "None" },
-                                        set: { appModel.setMapping(for: key.1, soundId: $0) }
-                                    ),
-                                    includeDefaultOption: true,
-                                    defaultOptionTitle: "Default Sound"
-                                )
-                                .frame(width: 260)
+                VStack(alignment: .leading, spacing: StudioTheme.Spacing.small) {
+                    Text("SPECIAL KEYS")
+                        .font(.system(size: 11, weight: .bold))
+                        .tracking(0.7)
+                        .foregroundStyle(StudioTheme.walnut)
+
+                    StudioSurface {
+                        VStack(spacing: 0) {
+                            ForEach(Array(specialKeys.enumerated()), id: \.element.1) { index, key in
+                                keyRow(key: key, isLast: index == specialKeys.count - 1)
                             }
-                            .padding(.vertical, StudioTheme.Spacing.medium)
-                            if index < keys.count - 1 { Divider().overlay(StudioTheme.separator) }
+                        }
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: StudioTheme.Spacing.small) {
+                    Text("MODIFIER KEYS")
+                        .font(.system(size: 11, weight: .bold))
+                        .tracking(0.7)
+                        .foregroundStyle(StudioTheme.walnut)
+
+                    StudioSurface {
+                        VStack(spacing: 0) {
+                            ForEach(Array(modifierKeys.enumerated()), id: \.element.1) { index, key in
+                                keyRow(key: key, isLast: index == modifierKeys.count - 1)
+                            }
                         }
                     }
                 }
             }
             .padding(StudioTheme.Spacing.xLarge)
         }
+    }
+
+    @ViewBuilder
+    private func keyRow(key: (String, UInt16, String), isLast: Bool) -> some View {
+        HStack(spacing: StudioTheme.Spacing.medium) {
+            Image(systemName: key.2)
+                .foregroundStyle(StudioTheme.walnut)
+                .frame(width: 28)
+            Text(key.0)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(StudioTheme.espresso)
+            Spacer()
+            SoundPickerView(
+                title: "",
+                selectionSoundId: Binding(
+                    get: { appModel.activePack.keyMappings[key.1] ?? "None" },
+                    set: { appModel.setMapping(for: key.1, soundId: $0) }
+                ),
+                includeDefaultOption: true,
+                defaultOptionTitle: "Default Sound"
+            )
+            .frame(width: 260)
+        }
+        .padding(.vertical, StudioTheme.Spacing.medium)
+        if !isLast { Divider().overlay(StudioTheme.separator) }
     }
 }
 

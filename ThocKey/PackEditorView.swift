@@ -11,6 +11,11 @@ public struct PackEditorView: View {
     @State private var enterSoundID = "None"
     @State private var backspaceSoundID = "None"
     @State private var escapeSoundID = "None"
+    @State private var tabSoundID = "None"
+    @State private var commandSoundID = "None"
+    @State private var shiftSoundID = "None"
+    @State private var optionSoundID = "None"
+    @State private var controlSoundID = "None"
 
     public init() {}
 
@@ -56,6 +61,20 @@ public struct PackEditorView: View {
                             SoundPickerView(title: "Backspace", selectionSoundId: $backspaceSoundID, includeDefaultOption: true)
                             Divider().overlay(StudioTheme.separator)
                             SoundPickerView(title: "Escape", selectionSoundId: $escapeSoundID, includeDefaultOption: true)
+                            Divider().overlay(StudioTheme.separator)
+                            SoundPickerView(title: "Tab", selectionSoundId: $tabSoundID, includeDefaultOption: true)
+                        }
+                    }
+
+                    EditorSection(title: "Modifier keys") {
+                        VStack(spacing: StudioTheme.Spacing.medium) {
+                            SoundPickerView(title: "Command (⌘)", selectionSoundId: $commandSoundID, includeDefaultOption: true)
+                            Divider().overlay(StudioTheme.separator)
+                            SoundPickerView(title: "Shift (⇧)", selectionSoundId: $shiftSoundID, includeDefaultOption: true)
+                            Divider().overlay(StudioTheme.separator)
+                            SoundPickerView(title: "Option / Alt (⌥)", selectionSoundId: $optionSoundID, includeDefaultOption: true)
+                            Divider().overlay(StudioTheme.separator)
+                            SoundPickerView(title: "Control (⌃)", selectionSoundId: $controlSoundID, includeDefaultOption: true)
                         }
                     }
 
@@ -87,6 +106,11 @@ public struct PackEditorView: View {
         if enterSoundID != "None" { mappings[36] = enterSoundID }
         if backspaceSoundID != "None" { mappings[51] = backspaceSoundID }
         if escapeSoundID != "None" { mappings[53] = escapeSoundID }
+        if tabSoundID != "None" { mappings[48] = tabSoundID }
+        if commandSoundID != "None" { mappings[55] = commandSoundID; mappings[54] = commandSoundID }
+        if shiftSoundID != "None" { mappings[56] = shiftSoundID; mappings[60] = shiftSoundID }
+        if optionSoundID != "None" { mappings[58] = optionSoundID; mappings[61] = optionSoundID }
+        if controlSoundID != "None" { mappings[59] = controlSoundID; mappings[62] = controlSoundID }
         let pack = SoundPack(
             name: packName,
             defaultSoundId: defaultSoundID,

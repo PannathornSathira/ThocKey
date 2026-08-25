@@ -55,15 +55,20 @@ public final class AppModel: ObservableObject {
     @Published public var appearancePreference: AppearancePreference {
         didSet { userDefaults.set(appearancePreference.rawValue, forKey: Keys.appearance) }
     }
+    @Published public var selectedTab: StudioTab = .packs
+    @Published public var isPaused: Bool = false
+    @Published public var pauseRemainingSeconds: Int = 0
     @Published public private(set) var selectedPackID: String
     @Published public private(set) var activePack: SoundPack = BuiltInSoundData.builtInPacks[0]
     @Published public private(set) var customPacks: [SoundPack] = []
+    @Published public private(set) var favoritePackIDs: Set<String> = []
     @Published public private(set) var soundLibrary: [SoundItem] = BuiltInSoundData.builtInSounds
     @Published public private(set) var isAccessibilityEnabled = false
     @Published public var presentedError: ThocKeyError?
 
     public var allPacks: [SoundPack] { BuiltInSoundData.builtInPacks + customPacks }
     public var selectablePacks: [SoundPack] { BuiltInSoundData.builtInPacks + customPacks.filter { $0.sourceSoundId == nil } }
+    public var favoritePacks: [SoundPack] { allPacks.filter { favoritePackIDs.contains($0.id) } }
     public var customSounds: [SoundItem] { soundLibrary.filter { !$0.isBuiltIn }.sorted { $0.displayName < $1.displayName } }
     public var selectedSoundPackName: String {
         get { activePack.sourceSoundId.flatMap(findSound(byId:))?.displayName ?? activePack.name }
@@ -86,6 +91,7 @@ public final class AppModel: ObservableObject {
     private var playback: AudioPlaying?
     private var packMappings: [String: [UInt16: String]] = [:]
     private var permissionTimer: Timer?
+    private var pauseTimer: Timer?
     private var isMonitoring = false
     private let logger = Logger(subsystem: "com.pannathorn.ThocKey", category: "AppModel")
 
@@ -142,11 +148,65 @@ public final class AppModel: ObservableObject {
         isMonitoring = false
         permissionTimer?.invalidate()
         permissionTimer = nil
+        pauseTimer?.invalidate()
+        pauseTimer = nil
         keyboardMonitor.stop()
     }
 
+    public func pauseSounds(for durationSeconds: Int = 900) {
+        isPaused = true
+        pauseRemainingSeconds = durationSeconds
+        pauseTimer?.invalidate()
+        pauseTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                if self.pauseRemainingSeconds > 1 {
+                    self.pauseRemainingSeconds -= 1
+                } else {
+                    self.resumeSounds()
+                }
+            }
+        }
+    }
+
+    public func resumeSounds() {
+        isPaused = false
+        pauseRemainingSeconds = 0
+        pauseTimer?.invalidate()
+        pauseTimer = nil
+    }
+
+    public var pauseRemainingFormatted: String {
+        let minutes = pauseRemainingSeconds / 60
+        let seconds = pauseRemainingSeconds % 60
+        return String(format: "%d:%02d", minutes, seconds)
+    }
+
+    public func isFavorite(packID: String) -> Bool {
+        favoritePackIDs.contains(packID)
+    }
+
+    public func toggleFavorite(packID: String) {
+        if favoritePackIDs.contains(packID) {
+            favoritePackIDs.remove(packID)
+        } else {
+            favoritePackIDs.insert(packID)
+        }
+        do { try persistCatalog() }
+        catch { present(error) }
+    }
+
     public func refreshAccessibilityStatus() {
+        let previouslyEnabled = isAccessibilityEnabled
         isAccessibilityEnabled = keyboardMonitor.isAccessibilityEnabled
+        if !previouslyEnabled && isAccessibilityEnabled && isMonitoring {
+            keyboardMonitor.stop()
+            keyboardMonitor.start(
+                onKeyDown: { [weak self] keyCode in self?.playKeyEvent(type: .down, keyCode: keyCode) },
+                onKeyUp: { [weak self] keyCode in self?.playKeyEvent(type: .up, keyCode: keyCode) },
+                onToggleMute: { [weak self] in self?.isGlobalSoundEnabled.toggle() }
+            )
+        }
     }
 
     public func selectPack(id: String) {
@@ -314,7 +374,8 @@ public final class AppModel: ObservableObject {
             )
             var item = SoundItem(
                 displayName: name, pressFileName: outputURL.lastPathComponent,
-                pressDuration: try validateAudio(at: outputURL)
+                pressDuration: try validateAudio(at: outputURL),
+                category: .customized
             )
             item = try storeProcessedSound(item, replacingSoundId: replacingSoundId)
             preload(sound: item, event: .down)
@@ -350,7 +411,8 @@ public final class AppModel: ObservableObject {
                 pressFileName: pressURL.lastPathComponent,
                 releaseFileName: releaseURL.lastPathComponent,
                 pressDuration: try validateAudio(at: pressURL),
-                releaseDuration: try validateAudio(at: releaseURL)
+                releaseDuration: try validateAudio(at: releaseURL),
+                category: .customized
             )
             item = try storeProcessedSound(item, replacingSoundId: replacingSoundId)
             preload(sound: item, event: .down)
@@ -485,8 +547,22 @@ public final class AppModel: ObservableObject {
     }
 
     public func playKeyEvent(type: KeyEventType, keyCode: UInt16? = nil, force: Bool = false) {
-        guard isGlobalSoundEnabled || force else { return }
-        let soundID = keyCode.flatMap { activePack.keyMappings[$0] } ?? activePack.defaultSoundId
+        guard (isGlobalSoundEnabled && !isPaused) || force else { return }
+        let soundID: String = {
+            guard let keyCode else { return activePack.defaultSoundId }
+            if let mapped = activePack.keyMappings[keyCode] { return mapped }
+            switch keyCode {
+            case 54: return activePack.keyMappings[55] ?? activePack.defaultSoundId
+            case 55: return activePack.keyMappings[54] ?? activePack.defaultSoundId
+            case 60: return activePack.keyMappings[56] ?? activePack.defaultSoundId
+            case 56: return activePack.keyMappings[60] ?? activePack.defaultSoundId
+            case 61: return activePack.keyMappings[58] ?? activePack.defaultSoundId
+            case 58: return activePack.keyMappings[61] ?? activePack.defaultSoundId
+            case 62: return activePack.keyMappings[59] ?? activePack.defaultSoundId
+            case 59: return activePack.keyMappings[62] ?? activePack.defaultSoundId
+            default: return activePack.defaultSoundId
+            }
+        }()
         guard let sound = findSound(byId: soundID), let url = findSoundURL(for: sound, event: type) else { return }
         do { try playback?.play(soundID: playbackID(sound.id, type), from: url) }
         catch { logger.error("Keystroke playback failed: \(error.localizedDescription, privacy: .public)") }
@@ -532,6 +608,7 @@ public final class AppModel: ObservableObject {
         }
         selectedPackID = allPacks.contains(where: { $0.id == catalog.selectedPackID })
             ? catalog.selectedPackID : BuiltInSoundData.defaultPackID
+        favoritePackIDs = catalog.favoritePackIDs
     }
 
     private func migrateV1Catalog(_ catalog: CatalogManifest) -> CatalogManifest {
@@ -633,7 +710,8 @@ public final class AppModel: ObservableObject {
     private func persistCatalog() throws {
         try catalogStore.saveCatalog(CatalogManifest(
             sounds: soundLibrary.filter { !$0.isBuiltIn }, packs: customPacks,
-            selectedPackID: selectedPackID, packMappings: packMappings
+            selectedPackID: selectedPackID, packMappings: packMappings,
+            favoritePackIDs: favoritePackIDs
         ))
     }
 

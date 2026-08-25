@@ -16,6 +16,7 @@ public protocol KeyboardMonitoring: AnyObject {
 public final class KeyboardMonitor: KeyboardMonitoring {
     private var globalMonitors: [Any] = []
     private var localMonitors: [Any] = []
+    private var lastModifierFlags: NSEvent.ModifierFlags = []
 
     public init() {}
 
@@ -37,6 +38,7 @@ public final class KeyboardMonitor: KeyboardMonitoring {
         onToggleMute: @escaping () -> Void
     ) {
         guard globalMonitors.isEmpty, localMonitors.isEmpty else { return }
+        lastModifierFlags = NSEvent.modifierFlags.intersection(.deviceIndependentFlagsMask)
 
         if let monitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown, handler: { event in
             if Self.isMuteShortcut(event) { onToggleMute() } else { onKeyDown(event.keyCode) }
@@ -44,6 +46,10 @@ public final class KeyboardMonitor: KeyboardMonitoring {
 
         if let monitor = NSEvent.addGlobalMonitorForEvents(matching: .keyUp, handler: { event in
             onKeyUp(event.keyCode)
+        }) { globalMonitors.append(monitor) }
+
+        if let monitor = NSEvent.addGlobalMonitorForEvents(matching: .flagsChanged, handler: { [weak self] event in
+            self?.handleFlagsChanged(event: event, onKeyDown: onKeyDown, onKeyUp: onKeyUp)
         }) { globalMonitors.append(monitor) }
 
         if let localDown = NSEvent.addLocalMonitorForEvents(matching: .keyDown, handler: { event in
@@ -59,6 +65,11 @@ public final class KeyboardMonitor: KeyboardMonitoring {
             onKeyUp(event.keyCode)
             return event
         }) { localMonitors.append(localUp) }
+
+        if let localFlags = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged, handler: { [weak self] event in
+            self?.handleFlagsChanged(event: event, onKeyDown: onKeyDown, onKeyUp: onKeyUp)
+            return event
+        }) { localMonitors.append(localFlags) }
     }
 
     public func stop() {
@@ -66,6 +77,39 @@ public final class KeyboardMonitor: KeyboardMonitoring {
         localMonitors.forEach(NSEvent.removeMonitor)
         globalMonitors.removeAll()
         localMonitors.removeAll()
+        lastModifierFlags = []
+    }
+
+    private func handleFlagsChanged(
+        event: NSEvent,
+        onKeyDown: (UInt16) -> Void,
+        onKeyUp: (UInt16) -> Void
+    ) {
+        let currentFlags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        let keyCode = event.keyCode
+
+        let flag: NSEvent.ModifierFlags? = {
+            switch keyCode {
+            case 54, 55: return .command
+            case 56, 60: return .shift
+            case 58, 61: return .option
+            case 59, 62: return .control
+            case 57: return .capsLock
+            case 63: return .function
+            default: return nil
+            }
+        }()
+
+        if let flag {
+            let isNowPressed = currentFlags.contains(flag)
+            let wasPressed = lastModifierFlags.contains(flag)
+            if isNowPressed && !wasPressed {
+                onKeyDown(keyCode)
+            } else if !isNowPressed && wasPressed {
+                onKeyUp(keyCode)
+            }
+        }
+        lastModifierFlags = currentFlags
     }
 
     private static func isMuteShortcut(_ event: NSEvent) -> Bool {

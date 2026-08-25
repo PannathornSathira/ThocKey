@@ -3,12 +3,17 @@ import Foundation
 public enum SoundCategory: String, Codable, CaseIterable, Identifiable {
     case builtIn = "Built-in"
     case custom = "Custom"
+    case customized = "Customized"
 
     public var id: String { rawValue }
 
     public init(from decoder: Decoder) throws {
         let value = try decoder.singleValueContainer().decode(String.self)
-        self = value == "Built-in" ? .builtIn : .custom
+        switch value {
+        case "Built-in": self = .builtIn
+        case "Customized": self = .customized
+        default: self = .custom
+        }
     }
 }
 
@@ -150,23 +155,26 @@ public struct CatalogManifest: Codable, Equatable {
     public var packs: [SoundPack]
     public var selectedPackID: String
     public var packMappings: [String: [UInt16: String]]
+    public var favoritePackIDs: Set<String>
 
     public init(
         schemaVersion: Int = CatalogManifest.currentSchemaVersion,
         sounds: [SoundItem] = [],
         packs: [SoundPack] = [],
         selectedPackID: String = BuiltInSoundData.defaultPackID,
-        packMappings: [String: [UInt16: String]] = [:]
+        packMappings: [String: [UInt16: String]] = [:],
+        favoritePackIDs: Set<String> = []
     ) {
         self.schemaVersion = schemaVersion
         self.sounds = sounds
         self.packs = packs
         self.selectedPackID = selectedPackID
         self.packMappings = packMappings
+        self.favoritePackIDs = favoritePackIDs
     }
 
     private enum CodingKeys: String, CodingKey {
-        case schemaVersion, sounds, packs, selectedPackID, packMappings
+        case schemaVersion, sounds, packs, selectedPackID, packMappings, favoritePackIDs
     }
 
     public init(from decoder: Decoder) throws {
@@ -176,6 +184,7 @@ public struct CatalogManifest: Codable, Equatable {
         packs = try container.decodeIfPresent([SoundPack].self, forKey: .packs) ?? []
         selectedPackID = try container.decodeIfPresent(String.self, forKey: .selectedPackID) ?? BuiltInSoundData.defaultPackID
         packMappings = try container.decodeIfPresent([String: [UInt16: String]].self, forKey: .packMappings) ?? [:]
+        favoritePackIDs = try container.decodeIfPresent(Set<String>.self, forKey: .favoritePackIDs) ?? []
     }
 }
 

@@ -58,6 +58,9 @@ public final class AudioPlaybackEngine: AudioPlaying {
 
     public func play(soundID: String, from url: URL) throws {
         guard !players.isEmpty else { return }
+        if !engine.isRunning {
+            try? engine.start()
+        }
         let pcmBuffer = try buffer(soundID: soundID, url: url)
         let player = players[currentPlayerIndex]
         if player.isPlaying { player.stop() }
