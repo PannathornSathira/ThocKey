@@ -1,9 +1,10 @@
 import SwiftUI
 import AVFoundation
+import UniformTypeIdentifiers
 
 public struct AudioCustomizerView: View {
     @Environment(\.dismiss) private var dismiss
-    @ObservedObject private var soundManager = SoundManager.shared
+    @ObservedObject private var appModel = AppModel.shared
     
     public let initialSound: SoundItem?
     public let initialFileURL: URL?
@@ -14,11 +15,11 @@ public struct AudioCustomizerView: View {
     @State private var startRatio: Double = 0.0
     @State private var endRatio: Double = 1.0
     
-    // Split Mode
+    // Release Variant
+    @State private var usePressForRelease: Bool = true
     @State private var isSplitMode: Bool = false
     @State private var splitRatio: Double = 0.5
-    @State private var downSoundName: String = ""
-    @State private var upSoundName: String = ""
+    @State private var releaseSourceURL: URL?
     
     // Audio Tweaks
     @State private var customDisplayName: String = ""
@@ -44,7 +45,7 @@ public struct AudioCustomizerView: View {
             return fileURL
         }
         if let sound = initialSound {
-            return soundManager.findSoundURL(for: sound)
+            return appModel.findSoundURL(for: sound)
         }
         return nil
     }
@@ -80,8 +81,8 @@ public struct AudioCustomizerView: View {
                                     .font(.caption)
                                     .padding(.horizontal, 8)
                                     .padding(.vertical, 3)
-                                    .background(Color.accentColor.opacity(0.15))
-                                    .foregroundColor(.accentColor)
+                                    .background(StudioTheme.walnut.opacity(0.15))
+                                    .foregroundStyle(StudioTheme.walnut)
                                     .cornerRadius(12)
                             }
                         }
@@ -105,7 +106,7 @@ public struct AudioCustomizerView: View {
                         // Waveform Visualizer
                         ZStack(alignment: .leading) {
                             RoundedRectangle(cornerRadius: 8)
-                                .fill(Color(NSColor.controlBackgroundColor))
+                                .fill(StudioTheme.surfaceMuted)
                                 .frame(height: 100)
                             
                             // Waveform bars
@@ -116,7 +117,7 @@ public struct AudioCustomizerView: View {
                                     let isSelected = progress >= startRatio && progress <= endRatio
                                     
                                     RoundedRectangle(cornerRadius: 2)
-                                        .fill(isSelected ? Color.accentColor : Color.secondary.opacity(0.3))
+                                    .fill(isSelected ? StudioTheme.walnut : StudioTheme.secondaryText.opacity(0.3))
                                         .frame(height: CGFloat(max(6, sample * 80)))
                                 }
                             }
@@ -142,7 +143,7 @@ public struct AudioCustomizerView: View {
                                     .cornerRadius(4)
                                 
                                 Slider(value: $startRatio, in: 0.0...0.95)
-                                    .onChange(of: startRatio) { newStart in
+                                    .onChange(of: startRatio) { _, newStart in
                                         if newStart >= endRatio {
                                             endRatio = min(1.0, newStart + 0.05)
                                         }
@@ -173,7 +174,7 @@ public struct AudioCustomizerView: View {
                                     .cornerRadius(4)
                                 
                                 Slider(value: $endRatio, in: 0.05...1.0)
-                                    .onChange(of: endRatio) { newEnd in
+                                    .onChange(of: endRatio) { _, newEnd in
                                         if newEnd <= startRatio {
                                             startRatio = max(0.0, newEnd - 0.05)
                                         }
@@ -193,39 +194,56 @@ public struct AudioCustomizerView: View {
                         }
                     }
                     .padding()
-                    .background(Color(NSColor.windowBackgroundColor))
+                    .background(StudioTheme.surface)
                     .cornerRadius(10)
                     
-                    // Split Mode Toggle
+                    // Release Sound Configuration
                     VStack(alignment: .leading, spacing: 10) {
-                        Toggle("Keystroke Splitter (Split Down / Up)", isOn: $isSplitMode)
+                        Toggle("Use press sound for release", isOn: $usePressForRelease)
                             .font(.headline)
-                        
-                        if isSplitMode {
-                            Text("Split this recording into two separate sounds: Key Down (press) and Key Up (release).")
+
+                        if !usePressForRelease {
+                            Picker("Release source", selection: $isSplitMode) {
+                                Text("Separate File").tag(false)
+                                Text("Split Recording").tag(true)
+                            }
+                            .pickerStyle(.segmented)
+
+                            if isSplitMode {
+                                Text("Split this recording into press and release regions while keeping one library name.")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+
+                                HStack {
+                                    Text("Split:")
+                                        .font(.caption)
+                                        .frame(width: 45, alignment: .leading)
+                                    Slider(value: $splitRatio, in: 0.0...1.0)
+                                    Text(String(format: "%.0f ms", splitPointSeconds * 1000))
+                                        .font(.caption)
+                                        .frame(width: 55, alignment: .trailing)
+                                }
+                            } else {
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text("Separate release audio").font(.subheadline)
+                                        Text(releaseSourceURL?.lastPathComponent ?? "No release file selected")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
+                                    Spacer()
+                                    Button("Choose Audio…", action: chooseReleaseAudio)
+                                        .buttonStyle(SecondaryButtonStyle())
+                                }
+                            }
+                        } else {
+                            Text("Release events use the press audio automatically.")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
-                            
-                            HStack {
-                                Text("Split:")
-                                    .font(.caption)
-                                    .frame(width: 45, alignment: .leading)
-                                Slider(value: $splitRatio, in: 0.0...1.0)
-                                Text(String(format: "%.0f ms", splitPointSeconds * 1000))
-                                    .font(.caption)
-                                    .frame(width: 55, alignment: .trailing)
-                            }
-                            
-                            HStack(spacing: 12) {
-                                TextField("Key Down Name", text: $downSoundName)
-                                    .textFieldStyle(.roundedBorder)
-                                TextField("Key Up Name", text: $upSoundName)
-                                    .textFieldStyle(.roundedBorder)
-                            }
                         }
                     }
                     .padding()
-                    .background(Color(NSColor.windowBackgroundColor))
+                    .background(StudioTheme.surface)
                     .cornerRadius(10)
                     
                     // Audio Tweaks
@@ -250,7 +268,7 @@ public struct AudioCustomizerView: View {
                             .foregroundColor(.accentColor)
                     }
                     .padding()
-                    .background(Color(NSColor.windowBackgroundColor))
+                    .background(StudioTheme.surface)
                     .cornerRadius(10)
                     
                     // Live Keystroke Test Area & Preview
@@ -270,27 +288,25 @@ public struct AudioCustomizerView: View {
                         TextField("Type here to test trimmed sound with keyboard rhythm...", text: $testTypingText)
                             .textFieldStyle(.roundedBorder)
                             .padding(.top, 2)
-                            .onChange(of: testTypingText) { _ in
+                            .onChange(of: testTypingText) {
                                 previewTrimmedAudio()
                             }
                     }
                     .padding()
-                    .background(Color(NSColor.windowBackgroundColor))
+                    .background(StudioTheme.surface)
                     .cornerRadius(10)
                     
                     // Output Sound Name
-                    if !isSplitMode {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Official Sound Display Name")
-                                .font(.headline)
-                            
-                            TextField("e.g. My Custom Thock", text: $customDisplayName)
-                                .textFieldStyle(.roundedBorder)
-                        }
-                        .padding()
-                        .background(Color(NSColor.windowBackgroundColor))
-                        .cornerRadius(10)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Official Sound Display Name")
+                            .font(.headline)
+
+                        TextField("e.g. My Custom Thock", text: $customDisplayName)
+                            .textFieldStyle(.roundedBorder)
                     }
+                    .padding()
+                    .background(StudioTheme.surface)
+                    .cornerRadius(10)
                     
                     if let error = errorMessage {
                         Text(error)
@@ -314,7 +330,8 @@ public struct AudioCustomizerView: View {
                 }
             }
         }
-        .frame(minWidth: 540, minHeight: 480)
+        .frame(minWidth: 620, minHeight: 560)
+        .background(StudioTheme.canvas)
         .onAppear {
             setupInitialState()
         }
@@ -322,11 +339,8 @@ public struct AudioCustomizerView: View {
     
     private var isSaveDisabled: Bool {
         if isProcessing { return true }
-        if isSplitMode {
-            return downSoundName.trimmingCharacters(in: .whitespaces).isEmpty ||
-                   upSoundName.trimmingCharacters(in: .whitespaces).isEmpty
-        }
-        return customDisplayName.trimmingCharacters(in: .whitespaces).isEmpty
+        if customDisplayName.trimmingCharacters(in: .whitespaces).isEmpty { return true }
+        return !usePressForRelease && !isSplitMode && releaseSourceURL == nil
     }
     
     private func adjustStart(by seconds: Double) {
@@ -342,10 +356,25 @@ public struct AudioCustomizerView: View {
     }
     
     private func setupInitialState() {
-        let baseName = initialSound?.displayName ?? (initialFileURL?.deletingPathExtension().lastPathComponent ?? "Custom Sound")
-        customDisplayName = "\(baseName) (Custom)"
-        downSoundName = "\(baseName) (Down)"
-        upSoundName = "\(baseName) (Up)"
+        let rawName = initialSound?.displayName ?? (initialFileURL?.deletingPathExtension().lastPathComponent ?? "Custom Sound")
+        let cleaned = rawName
+            .replacingOccurrences(of: #"\s*\((Custom|Meme)\)"#, with: "", options: [.regularExpression, .caseInsensitive])
+            .trimmingCharacters(in: .whitespaces)
+
+        if cleaned.caseInsensitiveCompare("fah") == .orderedSame || cleaned.caseInsensitiveCompare("fah meme") == .orderedSame {
+            customDisplayName = "Fah (Meme)"
+        } else if cleaned.caseInsensitiveCompare("custom sound") == .orderedSame || cleaned.isEmpty {
+            customDisplayName = "Custom Sound"
+        } else if initialSound?.isBuiltIn == true {
+            customDisplayName = "\(cleaned) (Custom)"
+        } else {
+            customDisplayName = cleaned
+        }
+
+        if let sound = initialSound, sound.releaseFileName != nil {
+            usePressForRelease = false
+            releaseSourceURL = appModel.findSoundURL(for: sound, event: .up)
+        }
         
         guard let url = activeSoundURL else { return }
         totalDuration = max(0.05, AudioProcessingService.shared.getAudioDuration(from: url))
@@ -366,7 +395,7 @@ public struct AudioCustomizerView: View {
         guard let url = activeSoundURL else { return }
         
         let startSec = trimStartSeconds
-        let endSec = isSplitMode ? splitPointSeconds : trimEndSeconds
+        let endSec = !usePressForRelease && isSplitMode ? splitPointSeconds : trimEndSeconds
         
         // Export to a temporary test file and play immediately
         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("test_trim.wav")
@@ -380,15 +409,29 @@ public struct AudioCustomizerView: View {
                 outputURL: tempURL
             )
             tempPlayer = try AVAudioPlayer(contentsOf: tempURL)
-            tempPlayer?.volume = Float(soundManager.masterVolume)
+            tempPlayer?.volume = Float(appModel.masterVolume)
             tempPlayer?.play()
         } catch {
             print("Preview failed: \(error)")
         }
     }
+
+    private func chooseReleaseAudio() {
+        let panel = NSOpenPanel()
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.allowedContentTypes = [.wav, .mp3, .aiff, .mpeg4Audio]
+        if panel.runModal() == .OK { releaseSourceURL = panel.url }
+    }
     
     private func saveSound() {
-        guard let soundId = initialSound?.id ?? (initialFileURL != nil ? soundManager.importSound(from: initialFileURL!)?.id : nil) else {
+        let soundId: String
+        if let existingID = initialSound?.id {
+            soundId = existingID
+        } else if let fileURL = initialFileURL {
+            do { soundId = try appModel.importSound(from: fileURL).id }
+            catch { errorMessage = error.localizedDescription; return }
+        } else {
             errorMessage = "Could not resolve sound source"
             return
         }
@@ -399,38 +442,43 @@ public struct AudioCustomizerView: View {
         let startSec = trimStartSeconds
         let endSec = trimEndSeconds
         let splitSec = splitPointSeconds
+        let replacingSoundID = initialSound?.isBuiltIn == false ? initialSound?.id : nil
         
         Task {
             do {
                 var savedSound: SoundItem?
-                if isSplitMode {
-                    let result = try await soundManager.splitKeystrokeSound(
+                if !usePressForRelease && isSplitMode {
+                    savedSound = try await appModel.saveSplitSound(
                         sourceSoundId: soundId,
-                        downName: downSoundName,
-                        upName: upSoundName,
-                        downStart: startSec,
-                        downEnd: splitSec,
-                        upStart: splitSec,
-                        upEnd: endSec,
+                        displayName: customDisplayName,
+                        pressStart: startSec,
+                        pressEnd: splitSec,
+                        releaseStart: splitSec,
+                        releaseEnd: endSec,
                         gain: gain,
-                        applyFade: applyFade
+                        applyFade: applyFade,
+                        replacingSoundId: replacingSoundID
                     )
-                    savedSound = result.down
                 } else {
-                    savedSound = try await soundManager.saveTrimmedSound(
+                    savedSound = try await appModel.saveTrimmedSound(
                         sourceSoundId: soundId,
                         newDisplayName: customDisplayName,
-                        packName: "Customized",
                         startTime: startSec,
                         endTime: endSec,
                         gain: gain,
-                        applyFade: applyFade
+                        applyFade: applyFade,
+                        replacingSoundId: replacingSoundID
                     )
+                    if !usePressForRelease, let releaseSourceURL, let savedID = savedSound?.id {
+                        savedSound = try appModel.attachReleaseAudio(to: savedID, from: releaseSourceURL)
+                    }
                 }
+                appModel.cleanupUnreferencedAudioFiles()
                 
                 await MainActor.run {
                     if let sound = savedSound, shouldAutoActivate {
-                        soundManager.setActiveSound(sound: sound)
+                        do { try appModel.setActiveSound(sound: sound) }
+                        catch { appModel.present(error) }
                     }
                     isProcessing = false
                     dismiss()

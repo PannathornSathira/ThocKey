@@ -12,6 +12,10 @@ final class ThocKeyUITestsLaunchTests: XCTestCase {
 
     func testLaunch() throws {
         let app = XCUIApplication()
+        app.launchEnvironment["THOCKEY_UI_TEST"] = "1"
+        app.launchEnvironment["THOCKEY_UI_TEST_RESET_DEFAULTS"] = "1"
+        app.launchEnvironment["THOCKEY_STORAGE_ROOT"] = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ThocKeyUITests-Launch-\(UUID().uuidString)").path
         app.launch()
 
         // Insert steps here to perform after app launch but before taking a screenshot,

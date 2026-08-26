@@ -6,7 +6,7 @@ public struct SoundPickerView: View {
     public let includeDefaultOption: Bool
     public var defaultOptionTitle: String = "Default"
     
-    @ObservedObject private var soundManager = SoundManager.shared
+    @ObservedObject private var appModel = AppModel.shared
     
     public init(
         title: String = "",
@@ -24,8 +24,8 @@ public struct SoundPickerView: View {
         if selectionSoundId == "None" || selectionSoundId.isEmpty {
             return defaultOptionTitle
         }
-        if let sound = soundManager.findSound(byId: selectionSoundId) {
-            return "\(sound.displayName) (\(sound.packName))"
+        if let sound = appModel.findSound(byId: selectionSoundId) {
+            return sound.displayName
         }
         return selectionSoundId
     }
@@ -41,11 +41,11 @@ public struct SoundPickerView: View {
             // Audio preview button for the currently selected sound
             if selectionSoundId != "None" && !selectionSoundId.isEmpty {
                 Button(action: {
-                    soundManager.playPreview(soundId: selectionSoundId)
+                    appModel.playPreview(soundId: selectionSoundId)
                 }) {
                     Image(systemName: "speaker.wave.2.fill")
                         .font(.caption)
-                        .foregroundColor(.accentColor)
+                        .foregroundStyle(StudioTheme.walnut)
                 }
                 .buttonStyle(.plain)
                 .help("Preview this sound")
@@ -66,13 +66,13 @@ public struct SoundPickerView: View {
                     Divider()
                 }
                 
-                let grouped = soundManager.groupedSoundsByPack()
-                ForEach(grouped, id: \.packName) { group in
-                    Section(header: Text("\(group.packName) Pack")) {
+                let grouped = appModel.groupedSoundsByCategory()
+                ForEach(grouped, id: \.category) { group in
+                    Section(header: Text(group.category.rawValue)) {
                         ForEach(group.sounds) { sound in
                             Button(action: {
                                 selectionSoundId = sound.id
-                                soundManager.playPreview(soundId: sound.id)
+                                appModel.playPreview(soundId: sound.id)
                             }) {
                                 HStack {
                                     Text(sound.displayName)
@@ -87,22 +87,26 @@ public struct SoundPickerView: View {
             } label: {
                 HStack {
                     Text(selectedDisplayName)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(StudioTheme.espresso)
                         .lineLimit(1)
                         .truncationMode(.tail)
                     Spacer()
                     Image(systemName: "chevron.up.chevron.down")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(StudioTheme.secondaryText)
                 }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(Color(NSColor.controlBackgroundColor))
-                .cornerRadius(6)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(StudioTheme.surfaceMuted)
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 6)
-                        .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(StudioTheme.separator, lineWidth: 1)
                 )
+                .contentShape(Rectangle())
             }
+            .menuStyle(.borderlessButton)
             .frame(minWidth: 160, maxWidth: 220)
         }
     }

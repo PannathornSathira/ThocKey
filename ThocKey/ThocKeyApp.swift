@@ -4,47 +4,133 @@ import AppKit
 @main
 struct ThocKeyApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @ObservedObject private var appModel = AppModel.shared
 
     var body: some Scene {
-        Window("ThocKey Studio", id: "studio") {
+        WindowGroup("ThocKey Studio", id: "studio") {
             ContentView()
-                .frame(minWidth: 620, minHeight: 520)
+                .frame(idealWidth: 1100, idealHeight: 760)
+                .preferredColorScheme(appModel.appearancePreference.colorScheme)
         }
+        .defaultSize(width: 1100, height: 760)
         
         MenuBarExtra("ThocKey", systemImage: "keyboard") {
             MenuBarOptions()
+                .preferredColorScheme(appModel.appearancePreference.colorScheme)
         }
     }
 }
 
 struct MenuBarOptions: View {
     @Environment(\.openWindow) private var openWindow
-    @ObservedObject private var soundManager = SoundManager.shared
-    
+    @ObservedObject private var appModel = AppModel.shared
+
     var body: some View {
-        Button(soundManager.isGlobalSoundEnabled ? "Mute Sounds" : "Enable Sounds") {
-            soundManager.isGlobalSoundEnabled.toggle()
+        Button(appModel.isGlobalSoundEnabled ? "Mute ThocKey" : "Enable ThocKey") {
+            appModel.isGlobalSoundEnabled.toggle()
         }
-        
-        Divider()
-        
-        Menu("Active Pack: \(soundManager.selectedSoundPackName)") {
-            ForEach(soundManager.allPacks) { pack in
-                Button(pack.name) {
-                    soundManager.selectedSoundPackName = pack.name
+
+        if appModel.isPaused {
+            Button("Resume Sounds (Paused: \(appModel.pauseRemainingFormatted))") {
+                appModel.resumeSounds()
+            }
+        } else {
+            Menu("Pause Sounds") {
+                Button("Pause for 15 Minutes") {
+                    appModel.pauseSounds(for: 15 * 60)
+                }
+                Button("Pause for 30 Minutes") {
+                    appModel.pauseSounds(for: 30 * 60)
+                }
+                Button("Pause for 1 Hour") {
+                    appModel.pauseSounds(for: 60 * 60)
                 }
             }
         }
-        
+
+        Menu("Volume: \(Int(appModel.masterVolume * 100))%") {
+            ForEach([1.0, 0.75, 0.50, 0.25, 0.0], id: \.self) { level in
+                Button {
+                    appModel.masterVolume = level
+                } label: {
+                    let percent = Int(level * 100)
+                    let title = level == 0.0 ? "Mute (0%)" : "\(percent)%"
+                    if abs(appModel.masterVolume - level) < 0.01 {
+                        Label(title, systemImage: "checkmark")
+                    } else {
+                        Text(title)
+                    }
+                }
+            }
+        }
+
+        Button("Preview Active Sound") {
+            appModel.playPreview(soundId: appModel.activePack.defaultSoundId)
+        }
+
         Divider()
-        
+
+        if !appModel.favoritePacks.isEmpty {
+            Menu("Favorite Packs") {
+                ForEach(appModel.favoritePacks) { pack in
+                    Button {
+                        appModel.selectPack(id: pack.id)
+                    } label: {
+                        if pack.id == appModel.selectedPackID {
+                            Label(pack.name, systemImage: "checkmark")
+                        } else {
+                            Text(pack.name)
+                        }
+                    }
+                }
+            }
+        }
+
+        Menu("Active Pack: \(appModel.selectedSoundPackName)") {
+            ForEach(appModel.selectablePacks) { pack in
+                Button {
+                    appModel.selectPack(id: pack.id)
+                } label: {
+                    if pack.id == appModel.selectedPackID {
+                        Label(pack.name, systemImage: "checkmark")
+                    } else {
+                        Text(pack.name)
+                    }
+                }
+            }
+            if !appModel.customSounds.isEmpty {
+                Divider()
+                ForEach(appModel.customSounds) { sound in
+                    Button {
+                        do { try appModel.setActiveSound(sound: sound) }
+                        catch { appModel.present(error) }
+                    } label: {
+                        if appModel.activePack.sourceSoundId == sound.id {
+                            Label(sound.displayName, systemImage: "checkmark")
+                        } else {
+                            Text(sound.displayName)
+                        }
+                    }
+                }
+            }
+        }
+
+        Divider()
+
         Button("Open ThocKey Studio...") {
+            appModel.selectedTab = .packs
             openWindow(id: "studio")
             NSApp.activate(ignoringOtherApps: true)
         }
-        
+
+        Button("Open Settings...") {
+            appModel.selectedTab = .settings
+            openWindow(id: "studio")
+            NSApp.activate(ignoringOtherApps: true)
+        }
+
         Divider()
-        
+
         Button("Quit ThocKey") {
             NSApplication.shared.terminate(nil)
         }
@@ -55,39 +141,15 @@ struct MenuBarOptions: View {
 class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        let isUITesting = ProcessInfo.processInfo.environment["THOCKEY_UI_TEST"] == "1"
+        AppModel.shared.startKeyboardMonitoring(requestPermission: !isUITesting)
         
-        // 1️⃣ Accessibility permission prompt
-        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: true]
-        let accessEnabled = AXIsProcessTrustedWithOptions(options as CFDictionary)
-        print("Accessibility enabled:", accessEnabled)
-        
-        // 2️⃣ Global keyboard monitoring (when app is in background)
-        NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { event in
-            if event.modifierFlags.contains([.command, .shift]) && event.keyCode == 46 { // ⌘ + ⇧ + M
-                SoundManager.shared.isGlobalSoundEnabled.toggle()
-                return
-            }
-            SoundManager.shared.playKeyEvent(type: .down, keyCode: event.keyCode)
-        }
+        // Ensure Studio window is foregrounded on launch
+        NSApp.activate(ignoringOtherApps: true)
+    }
 
-        NSEvent.addGlobalMonitorForEvents(matching: .keyUp) { event in
-            SoundManager.shared.playKeyEvent(type: .up, keyCode: event.keyCode)
-        }
-        
-        // 3️⃣ Local keyboard monitoring (when app is in foreground)
-        NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-            if event.modifierFlags.contains([.command, .shift]) && event.keyCode == 46 { // ⌘ + ⇧ + M
-                SoundManager.shared.isGlobalSoundEnabled.toggle()
-                return nil // consume the event
-            }
-            SoundManager.shared.playKeyEvent(type: .down, keyCode: event.keyCode)
-            return event
-        }
-        
-        NSEvent.addLocalMonitorForEvents(matching: .keyUp) { event in
-            SoundManager.shared.playKeyEvent(type: .up, keyCode: event.keyCode)
-            return event
-        }
+    func applicationWillTerminate(_ notification: Notification) {
+        AppModel.shared.stopKeyboardMonitoring()
     }
     
     // Prevent the app from quitting when the main window is closed

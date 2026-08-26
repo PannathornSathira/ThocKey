@@ -1,354 +1,502 @@
+import AppKit
 import SwiftUI
 
 public struct ContentView: View {
-    @ObservedObject private var soundManager = SoundManager.shared
-    
-    @State private var selectedTab: StudioTab = .packs
-    @State private var typingTestText: String = ""
-    @State private var isAccessibilityEnabled: Bool = false
-    @State private var isShowingPackEditor: Bool = false
-    
-    public enum StudioTab: String, CaseIterable, Identifiable {
-        case packs = "Sounds & Packs"
-        case keyMapping = "Key Mappings"
-        case library = "Sound Library"
-        case settings = "Settings"
-        
-        public var id: String { rawValue }
-        
-        public var icon: String {
-            switch self {
-            case .packs: return "square.grid.2x2.fill"
-            case .keyMapping: return "keyboard.fill"
-            case .library: return "waveform.badge.magnifyingglass"
-            case .settings: return "gearshape.fill"
-            }
-        }
-    }
-    
+    @ObservedObject private var appModel = AppModel.shared
+    @State private var isShowingPackEditor = false
+
     public init() {}
-    
+
     public var body: some View {
-        VStack(spacing: 0) {
-            // Studio Header & Tab Bar
-            VStack(spacing: 12) {
-                HStack(spacing: 12) {
-                    // App Logo Icon
-                    Image("AppLogo")
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: 44, height: 44)
-                        .cornerRadius(10)
-                        .shadow(color: Color.black.opacity(0.15), radius: 3, x: 0, y: 2)
-                    
-                    VStack(alignment: .leading, spacing: 2) {
-                        HStack(spacing: 8) {
-                            Text("ThocKey Studio")
-                                .font(.title2)
-                                .fontWeight(.bold)
-                            
-                            Text("v1.0 MVP")
-                                .font(.caption2)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(Color.secondary.opacity(0.15))
-                                .cornerRadius(6)
-                        }
-                        
-                        Text("Satisfying mechanical keyboard audio with custom sound tuning.")
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
-                    }
-                    
-                    Spacer()
-                    
-                    // Master Enable Quick Toggle
-                    Toggle(isOn: $soundManager.isGlobalSoundEnabled) {
-                        Text(soundManager.isGlobalSoundEnabled ? "Sound Active" : "Muted")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                    }
-                    .toggleStyle(.switch)
+        HStack(spacing: 0) {
+            StudioSidebar(selection: $appModel.selectedTab, isAccessibilityEnabled: appModel.isAccessibilityEnabled)
+            Divider().overlay(StudioTheme.separator)
+            Group {
+                switch appModel.selectedTab {
+                case .packs:
+                    PacksStudioView(isShowingPackEditor: $isShowingPackEditor)
+                case .keyMapping:
+                    KeyMappingsStudioView()
+                case .library:
+                    SoundLibraryView()
+                case .settings:
+                    SettingsStudioView()
                 }
-                
-                // Segmented Tab Selector
-                Picker("Section", selection: $selectedTab) {
-                    ForEach(StudioTab.allCases) { tab in
-                        Label(tab.rawValue, systemImage: tab.icon).tag(tab)
-                    }
-                }
-                .pickerStyle(.segmented)
             }
-            .padding()
-            .background(Color(NSColor.controlBackgroundColor))
-            
-            Divider()
-            
-            // Tab Content
-            switch selectedTab {
-            case .packs:
-                packsTab
-            case .keyMapping:
-                keyMappingTab
-            case .library:
-                SoundLibraryView()
-            case .settings:
-                settingsTab
-            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(StudioTheme.canvas)
         }
-        .frame(minWidth: 620, minHeight: 520)
-        .onAppear {
-            checkAccessibility()
-            Timer.scheduledTimer(withTimeInterval: 2.0, repeats: true) { _ in
-                checkAccessibility()
-            }
+        .frame(minWidth: 880, minHeight: 640)
+        .sheet(isPresented: $isShowingPackEditor) { PackEditorView() }
+        .alert("ThocKey couldn’t complete that action", isPresented: errorBinding) {
+            Button("OK", role: .cancel) { appModel.presentedError = nil }
+        } message: {
+            Text(appModel.presentedError?.localizedDescription ?? "Please try again.")
         }
-        .sheet(isPresented: $isShowingPackEditor) {
-            PackEditorView()
+        .onAppear { appModel.refreshAccessibilityStatus() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            appModel.refreshAccessibilityStatus()
         }
     }
-    
-    // MARK: - Packs Tab
-    private var packsTab: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                
-                // Pack Selector Box
-                VStack(alignment: .leading, spacing: 12) {
-                    HStack {
-                        Text("Active Sound Pack")
-                            .font(.headline)
-                        Spacer()
-                        Button(action: { isShowingPackEditor = true }) {
-                            Label("New Pack", systemImage: "plus")
-                        }
-                    }
-                    
-                    Picker("Active Pack", selection: $soundManager.selectedSoundPackName) {
-                        ForEach(soundManager.allPacks) { pack in
-                            Text(pack.name).tag(pack.name)
-                        }
-                    }
-                    .pickerStyle(.menu)
-                    .labelsHidden()
-                    
-                    // Pack details
-                    HStack(spacing: 16) {
-                        let downSound = soundManager.findSound(byId: soundManager.activePack.defaultDownSoundId)
-                        let upSound = soundManager.findSound(byId: soundManager.activePack.defaultUpSoundId)
-                        
-                        Label("Down: \(downSound?.displayName ?? "Default")", systemImage: "arrow.down.circle")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                        
-                        Label("Up: \(upSound?.displayName ?? "Default")", systemImage: "arrow.up.circle")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
-                }
-                .padding()
-                .background(Color(NSColor.windowBackgroundColor))
-                .cornerRadius(10)
-                
-                // Volume & Quick Controls
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Sound Controls")
-                        .font(.headline)
-                    
-                    VStack(alignment: .leading, spacing: 6) {
-                        HStack {
-                            Text("Master Volume")
-                                .font(.subheadline)
-                            Spacer()
-                            Text("\(Int(soundManager.masterVolume * 100))%")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Slider(value: $soundManager.masterVolume, in: 0...1) {
-                            Text("Volume")
-                        } minimumValueLabel: {
-                            Image(systemName: "speaker.fill")
-                                .foregroundColor(.secondary)
-                        } maximumValueLabel: {
-                            Image(systemName: "speaker.wave.3.fill")
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                }
-                .padding()
-                .background(Color(NSColor.windowBackgroundColor))
-                .cornerRadius(10)
-                
-                // Interactive Typing Test Area
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("Interactive Typing Test Area")
-                        .font(.headline)
-                    
-                    Text("Test your active sound pack directly in the box below:")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    
-                    TextField("Start typing here to test your mechanical keyboard sounds...", text: $typingTestText)
-                        .textFieldStyle(.roundedBorder)
-                        .font(.title3)
-                        .padding(.vertical, 4)
-                }
-                .padding()
-                .background(Color(NSColor.windowBackgroundColor))
-                .cornerRadius(10)
-            }
-            .padding()
-        }
-    }
-    
-    // MARK: - Key Mapping Tab
-    private var keyMappingTab: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Custom Key Sounds for: \(soundManager.activePack.name)")
-                        .font(.headline)
-                    Text("Assign specific sounds from any sound pack to individual keys. Sounds display official names and are grouped by pack.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                
-                VStack(spacing: 8) {
-                    KeyMappingItemRow(title: "Space Bar", keyCode: 49)
-                    KeyMappingItemRow(title: "Return / Enter", keyCode: 36)
-                    KeyMappingItemRow(title: "Backspace / Delete", keyCode: 51)
-                    KeyMappingItemRow(title: "Escape", keyCode: 53)
-                    KeyMappingItemRow(title: "Tab", keyCode: 48)
-                }
-                .padding()
-                .background(Color(NSColor.windowBackgroundColor))
-                .cornerRadius(10)
-                
-                HStack {
-                    Spacer()
-                    Button("Reset Key Mappings to Default") {
-                        soundManager.activePack.keyMappings.removeAll()
-                        if let data = try? JSONEncoder().encode(soundManager.activePack.keyMappings) {
-                            UserDefaults.standard.set(data, forKey: "customMappings_\(soundManager.activePack.name)")
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                }
-            }
-            .padding()
-        }
-    }
-    
-    // MARK: - Settings Tab
-    private var settingsTab: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                // Permissions Card
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("macOS Accessibility Permissions")
-                        .font(.headline)
-                    
-                    HStack {
-                        Image(systemName: isAccessibilityEnabled ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                            .foregroundColor(isAccessibilityEnabled ? .green : .yellow)
-                            .font(.title2)
-                        
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(isAccessibilityEnabled ? "Accessibility Permission Active" : "Accessibility Permission Required")
-                                .font(.subheadline)
-                                .fontWeight(.medium)
-                            Text("Required for detecting global keystrokes across all applications.")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                        }
-                        
-                        Spacer()
-                        
-                        if !isAccessibilityEnabled {
-                            Button("Open Settings") {
-                                openSystemSettings()
-                            }
-                            .buttonStyle(.borderedProminent)
-                        }
-                    }
-                }
-                .padding()
-                .background(Color(NSColor.windowBackgroundColor))
-                .cornerRadius(10)
-                
-                // Shortcut Card
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Global Shortcuts")
-                        .font(.headline)
-                    
-                    HStack {
-                        Text("Global Sound Mute / Unmute")
-                            .font(.subheadline)
-                        Spacer()
-                        Text("⌘ + ⇧ + M")
-                            .font(.caption)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(Color.secondary.opacity(0.15))
-                            .cornerRadius(6)
-                    }
-                }
-                .padding()
-                .background(Color(NSColor.windowBackgroundColor))
-                .cornerRadius(10)
-                
-                // Privacy Guarantee Card
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Privacy by Design")
-                        .font(.headline)
-                    
-                    Text("ThocKey processes key event notifications locally in real time solely to trigger sound playback. ThocKey never logs, saves, transmits, or collects what you type.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                .padding()
-                .background(Color(NSColor.windowBackgroundColor))
-                .cornerRadius(10)
-            }
-            .padding()
-        }
-    }
-    
-    private func checkAccessibility() {
-        let options = [kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: false]
-        isAccessibilityEnabled = AXIsProcessTrustedWithOptions(options as CFDictionary)
-    }
-    
-    private func openSystemSettings() {
-        if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") {
-            NSWorkspace.shared.open(url)
-        }
+
+    private var errorBinding: Binding<Bool> {
+        Binding(
+            get: { appModel.presentedError != nil },
+            set: { if !$0 { appModel.presentedError = nil } }
+        )
     }
 }
 
-private struct KeyMappingItemRow: View {
-    let title: String
-    let keyCode: UInt16
-    @ObservedObject private var soundManager = SoundManager.shared
-    
+private struct PacksStudioView: View {
+    @ObservedObject private var appModel = AppModel.shared
+    @Binding var isShowingPackEditor: Bool
+    @State private var typingTestText = ""
+
     var body: some View {
-        HStack {
-            Text(title)
-                .font(.body)
+        ScrollView {
+            VStack(alignment: .leading, spacing: StudioTheme.Spacing.large) {
+                StudioSectionHeader(
+                    title: "Sounds & Packs",
+                    subtitle: "Choose and test your active sound pack."
+                ) {
+                    HStack(spacing: StudioTheme.Spacing.regular) {
+                        Toggle("Sound Active", isOn: $appModel.isGlobalSoundEnabled)
+                            .toggleStyle(.switch)
+                            .tint(StudioTheme.moss)
+                            .accessibilityIdentifier("sound-active-toggle")
+                        Button { isShowingPackEditor = true } label: {
+                            Label("New Pack", systemImage: "plus")
+                        }
+                        .buttonStyle(PrimaryButtonStyle())
+                        .accessibilityIdentifier("new-pack-button")
+                    }
+                }
+
+                // Active Pack Card & Breakdown
+                StudioSurface {
+                    VStack(alignment: .leading, spacing: StudioTheme.Spacing.regular) {
+                        HStack {
+                            Text("ACTIVE SOUND PACK")
+                                .font(.system(size: 11, weight: .bold))
+                                .tracking(0.8)
+                                .foregroundStyle(StudioTheme.walnut)
+                            Spacer()
+                            Button {
+                                appModel.toggleFavorite(packID: appModel.selectedPackID)
+                            } label: {
+                                Image(systemName: appModel.isFavorite(packID: appModel.selectedPackID) ? "star.fill" : "star")
+                                    .foregroundStyle(appModel.isFavorite(packID: appModel.selectedPackID) ? StudioTheme.caramel : StudioTheme.secondaryText)
+                                    .font(.system(size: 13))
+                            }
+                            .buttonStyle(.plain)
+                            .help(appModel.isFavorite(packID: appModel.selectedPackID) ? "Remove from favorites" : "Add to favorites")
+                            .accessibilityLabel("Favorite sound pack")
+
+                            HStack(spacing: 4) {
+                                Circle()
+                                    .fill(StudioTheme.moss)
+                                    .frame(width: 8, height: 8)
+                                Text("Active")
+                                    .font(.system(size: 11, weight: .semibold))
+                                    .foregroundStyle(StudioTheme.moss)
+                            }
+                        }
+
+                        // Active Pack Picker Card
+                        Menu {
+                            Section("Sound Packs") {
+                                ForEach(appModel.selectablePacks) { pack in
+                                    Button {
+                                        appModel.selectPack(id: pack.id)
+                                    } label: {
+                                        if pack.id == appModel.selectedPackID {
+                                            Label(pack.name, systemImage: "checkmark")
+                                        } else {
+                                            Text(pack.name)
+                                        }
+                                    }
+                                }
+                            }
+                            if !appModel.customSounds.isEmpty {
+                                Section("Library Sounds") {
+                                    ForEach(appModel.customSounds) { sound in
+                                        Button {
+                                            do { try appModel.setActiveSound(sound: sound) }
+                                            catch { appModel.present(error) }
+                                        } label: {
+                                            if appModel.activePack.sourceSoundId == sound.id {
+                                                Label(sound.displayName, systemImage: "checkmark")
+                                            } else {
+                                                Text(sound.displayName)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        } label: {
+                            HStack(spacing: StudioTheme.Spacing.medium) {
+                                Circle()
+                                    .fill(StudioTheme.moss)
+                                    .frame(width: 12, height: 12)
+                                    .overlay(Circle().fill(Color.white).frame(width: 4, height: 4))
+                                Text(appModel.selectedSoundPackName)
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundStyle(StudioTheme.espresso)
+                                Spacer()
+                                Image(systemName: "chevron.down")
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundStyle(StudioTheme.secondaryText)
+                            }
+                            .padding(.horizontal, StudioTheme.Spacing.regular)
+                            .frame(maxWidth: .infinity, minHeight: 42)
+                            .background(StudioTheme.canvas)
+                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .stroke(StudioTheme.separator, lineWidth: 1)
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .menuStyle(.borderlessButton)
+                        .menuIndicator(.hidden)
+                        .accessibilityLabel("Active Pack")
+                        .accessibilityValue(appModel.selectedSoundPackName)
+                        .accessibilityIdentifier("active-pack-picker")
+
+                        Divider().overlay(StudioTheme.separator)
+
+                        let activeSound = appModel.findSound(byId: appModel.activePack.defaultSoundId)
+                        ActiveSoundRow(
+                            title: "Press Sound",
+                            icon: "arrow.down",
+                            sound: activeSound,
+                            event: .down
+                        )
+                        Divider().overlay(StudioTheme.separator.opacity(0.7))
+                        ActiveSoundRow(
+                            title: "Release Sound",
+                            icon: "arrow.up",
+                            sound: activeSound,
+                            event: .up
+                        )
+                    }
+                }
+
+                // Master Volume Slider
+                HStack(spacing: StudioTheme.Spacing.regular) {
+                    Image(systemName: "speaker.wave.2.fill")
+                        .foregroundStyle(StudioTheme.walnut)
+                    Text("Master Volume")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(StudioTheme.espresso)
+                    Slider(value: $appModel.masterVolume, in: 0...1)
+                        .tint(StudioTheme.walnut)
+                        .accessibilityIdentifier("master-volume-slider")
+                    Text("\(Int(appModel.masterVolume * 100))%")
+                        .font(.system(size: 13, weight: .medium, design: .monospaced))
+                        .foregroundStyle(StudioTheme.secondaryText)
+                        .frame(width: 42, alignment: .trailing)
+                }
+                .padding(.horizontal, StudioTheme.Spacing.xSmall)
+
+                // Interactive Typing Test Pad
+                ZStack {
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(StudioTheme.surface.opacity(0.72))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .stroke(StudioTheme.separator, style: StrokeStyle(lineWidth: 1, dash: [5, 4]))
+                        }
+
+                    TextEditor(text: $typingTestText)
+                        .font(.system(size: 20, weight: .medium, design: .rounded))
+                        .foregroundStyle(StudioTheme.espresso)
+                        .scrollContentBackground(.hidden)
+                        .padding(StudioTheme.Spacing.regular)
+                        .background(Color.clear)
+                        .accessibilityLabel("Typing test")
+                        .accessibilityIdentifier("typing-test-field")
+                        .onChange(of: typingTestText) {
+                            appModel.playKeyEvent(type: .down, force: true)
+                        }
+
+                    if typingTestText.isEmpty {
+                        Text("Type here to test \(displayPackName)…")
+                            .font(.system(size: 20, weight: .medium, design: .rounded))
+                            .foregroundStyle(StudioTheme.secondaryText)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                            .padding(StudioTheme.Spacing.large)
+                            .allowsHitTesting(false)
+
+                        VStack(spacing: StudioTheme.Spacing.small) {
+                            Image(systemName: "keyboard")
+                                .font(.system(size: 25, weight: .regular))
+                            Text("Press any key to begin")
+                                .font(.system(size: 12, weight: .medium))
+                        }
+                        .foregroundStyle(StudioTheme.secondaryText.opacity(0.8))
+                        .allowsHitTesting(false)
+                    }
+                }
+                .frame(minHeight: 140)
+
+            }
+            .padding(StudioTheme.Spacing.xLarge)
+        }
+    }
+
+    private var displayPackName: String {
+        appModel.activePack.name.replacingOccurrences(of: " (Default)", with: "")
+    }
+}
+
+private struct ActiveSoundRow: View {
+    @ObservedObject private var appModel = AppModel.shared
+    let title: String
+    let icon: String
+    let sound: SoundItem?
+    let event: KeyEventType
+
+    var body: some View {
+        HStack(spacing: StudioTheme.Spacing.medium) {
+            Image(systemName: icon)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(Color.white)
+                .frame(width: 38, height: 38)
+                .background(StudioTheme.walnut)
+                .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(StudioTheme.espresso)
+                Text(detailText)
+                    .font(.system(size: 12))
+                    .foregroundStyle(StudioTheme.secondaryText)
+            }
+            Spacer()
+            Button {
+                if let sound { appModel.playPreview(soundId: sound.id, event: event) }
+            } label: {
+                Image(systemName: "play.fill")
+                    .frame(width: 30, height: 30)
+                    .background(StudioTheme.surfaceMuted)
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(StudioTheme.espresso)
+            .disabled(sound == nil)
+            .accessibilityLabel("Preview \(title.lowercased())")
+            .accessibilityIdentifier(title == "Press Sound" ? "preview-press-button" : "preview-release-button")
+        }
+    }
+
+    private var detailText: String {
+        guard let sound else { return "Sound unavailable" }
+        if event == .up, sound.releaseFileName == nil { return "\(sound.displayName) · Same as Press" }
+        return sound.displayName
+    }
+}
+
+private struct KeyMappingsStudioView: View {
+    @ObservedObject private var appModel = AppModel.shared
+    private let specialKeys: [(String, UInt16, String)] = [
+        ("Space Bar", 49, "space"),
+        ("Return / Enter", 36, "return"),
+        ("Backspace / Delete", 51, "delete.left"),
+        ("Escape", 53, "escape"),
+        ("Tab", 48, "arrow.right.to.line")
+    ]
+
+    private let modifierKeys: [(String, UInt16, String)] = [
+        ("Command (⌘)", 55, "command"),
+        ("Shift (⇧)", 56, "shift"),
+        ("Option / Alt (⌥)", 58, "option"),
+        ("Control (⌃)", 59, "control"),
+        ("Caps Lock (⇪)", 57, "capslock")
+    ]
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: StudioTheme.Spacing.large) {
+                StudioSectionHeader(
+                    title: "Key Mappings",
+                    subtitle: "Give special keys and modifiers their own sound in \(appModel.activePack.name)."
+                ) {
+                    Button("Reset Mappings") { appModel.resetMappings() }
+                        .buttonStyle(SecondaryButtonStyle())
+                }
+
+                VStack(alignment: .leading, spacing: StudioTheme.Spacing.small) {
+                    Text("SPECIAL KEYS")
+                        .font(.system(size: 11, weight: .bold))
+                        .tracking(0.7)
+                        .foregroundStyle(StudioTheme.walnut)
+
+                    StudioSurface {
+                        VStack(spacing: 0) {
+                            ForEach(Array(specialKeys.enumerated()), id: \.element.1) { index, key in
+                                keyRow(key: key, isLast: index == specialKeys.count - 1)
+                            }
+                        }
+                    }
+                }
+
+                VStack(alignment: .leading, spacing: StudioTheme.Spacing.small) {
+                    Text("MODIFIER KEYS")
+                        .font(.system(size: 11, weight: .bold))
+                        .tracking(0.7)
+                        .foregroundStyle(StudioTheme.walnut)
+
+                    StudioSurface {
+                        VStack(spacing: 0) {
+                            ForEach(Array(modifierKeys.enumerated()), id: \.element.1) { index, key in
+                                keyRow(key: key, isLast: index == modifierKeys.count - 1)
+                            }
+                        }
+                    }
+                }
+            }
+            .padding(StudioTheme.Spacing.xLarge)
+        }
+    }
+
+    @ViewBuilder
+    private func keyRow(key: (String, UInt16, String), isLast: Bool) -> some View {
+        HStack(spacing: StudioTheme.Spacing.medium) {
+            Image(systemName: key.2)
+                .foregroundStyle(StudioTheme.walnut)
+                .frame(width: 28)
+            Text(key.0)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(StudioTheme.espresso)
             Spacer()
             SoundPickerView(
                 title: "",
                 selectionSoundId: Binding(
-                    get: { soundManager.activePack.keyMappings[keyCode] ?? "None" },
-                    set: { soundManager.setMapping(for: keyCode, soundId: $0) }
+                    get: { appModel.activePack.keyMappings[key.1] ?? "None" },
+                    set: { appModel.setMapping(for: key.1, soundId: $0) }
                 ),
                 includeDefaultOption: true,
                 defaultOptionTitle: "Default Sound"
             )
+            .frame(width: 260)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, StudioTheme.Spacing.medium)
+        if !isLast { Divider().overlay(StudioTheme.separator) }
+    }
+}
+
+private struct SettingsStudioView: View {
+    @ObservedObject private var appModel = AppModel.shared
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: StudioTheme.Spacing.large) {
+                StudioSectionHeader(title: "Settings", subtitle: "Permissions, shortcuts, and privacy.")
+
+                StudioSurface {
+                    HStack(spacing: StudioTheme.Spacing.medium) {
+                        Image(systemName: "circle.lefthalf.filled")
+                            .foregroundStyle(StudioTheme.walnut)
+                            .frame(width: 24)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Appearance")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(StudioTheme.espresso)
+                            Text("Choose a warm light theme, dark theme, or follow macOS.")
+                                .font(.system(size: 11))
+                                .foregroundStyle(StudioTheme.secondaryText)
+                        }
+                        Spacer()
+                        Picker("Appearance", selection: $appModel.appearancePreference) {
+                            ForEach(AppearancePreference.allCases) { preference in
+                                Text(preference.rawValue).tag(preference)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.segmented)
+                        .frame(width: 220)
+                        .accessibilityIdentifier("appearance-picker")
+                    }
+                }
+
+                StudioSurface {
+                    VStack(alignment: .leading, spacing: StudioTheme.Spacing.regular) {
+                        HStack(spacing: StudioTheme.Spacing.medium) {
+                            Image(systemName: appModel.isAccessibilityEnabled ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                                .font(.system(size: 24))
+                                .foregroundStyle(appModel.isAccessibilityEnabled ? StudioTheme.moss : StudioTheme.caramel)
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(appModel.isAccessibilityEnabled ? "Accessibility is active" : "Accessibility permission required")
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundStyle(StudioTheme.espresso)
+                                Text("ThocKey uses this permission only to detect key press notifications and play sound locally.")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(StudioTheme.secondaryText)
+                            }
+                            Spacer()
+                            if appModel.isAccessibilityEnabled {
+                                Button("Refresh") { appModel.refreshAccessibilityStatus() }
+                                    .buttonStyle(SecondaryButtonStyle())
+                            } else {
+                                HStack(spacing: StudioTheme.Spacing.small) {
+                                    Button("Check Status") { appModel.refreshAccessibilityStatus() }
+                                        .buttonStyle(SecondaryButtonStyle())
+                                    Button("Open Settings") { openAccessibilitySettings() }
+                                        .buttonStyle(PrimaryButtonStyle())
+                                }
+                            }
+                        }
+
+                        if !appModel.isAccessibilityEnabled {
+                            Divider().overlay(StudioTheme.separator)
+                            HStack(spacing: 8) {
+                                Image(systemName: "info.circle")
+                                    .foregroundStyle(StudioTheme.caramel)
+                                    .font(.system(size: 13))
+                                Text("If already enabled in macOS System Settings, click 'Check Status' or toggle the switch off and on in System Settings.")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(StudioTheme.secondaryText)
+                            }
+                        }
+                    }
+                }
+
+                StudioSurface {
+                    VStack(spacing: StudioTheme.Spacing.regular) {
+                        SettingsRow(icon: "command", title: "Mute or unmute", value: "⌘ ⇧ M")
+                        Divider().overlay(StudioTheme.separator)
+                        SettingsRow(icon: "lock.shield", title: "Privacy by design", value: "No keystroke text is saved")
+                        Divider().overlay(StudioTheme.separator)
+                        SettingsRow(icon: "internaldrive", title: "Sound storage", value: "Local Application Support")
+                    }
+                }
+            }
+            .padding(StudioTheme.Spacing.xLarge)
+        }
+        .onAppear { appModel.refreshAccessibilityStatus() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            appModel.refreshAccessibilityStatus()
+        }
+    }
+
+    private func openAccessibilitySettings() {
+        guard let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility") else { return }
+        NSWorkspace.shared.open(url)
+    }
+}
+
+private struct SettingsRow: View {
+    let icon: String
+    let title: String
+    let value: String
+
+    var body: some View {
+        HStack(spacing: StudioTheme.Spacing.medium) {
+            Image(systemName: icon).foregroundStyle(StudioTheme.walnut).frame(width: 24)
+            Text(title).font(.system(size: 14, weight: .medium)).foregroundStyle(StudioTheme.espresso)
+            Spacer()
+            Text(value).font(.system(size: 12)).foregroundStyle(StudioTheme.secondaryText)
+        }
     }
 }

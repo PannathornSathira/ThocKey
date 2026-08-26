@@ -20,12 +20,18 @@
 		15CC63612F752A6500C3F463 /* creamy_key.wav in Resources */ = {isa = PBXBuildFile; fileRef = 15CC635E2F752A6500C3F463 /* creamy_key.wav */; };
 		15CC63622F752A6500C3F463 /* clicky_key.wav in Resources */ = {isa = PBXBuildFile; fileRef = 15CC635F2F752A6500C3F463 /* clicky_key.wav */; };
 		15CC63632F752A6500C3F463 /* quiet_key.wav in Resources */ = {isa = PBXBuildFile; fileRef = 15CC63602F752A6500C3F463 /* quiet_key.wav */; };
+		15CC63652F752A6500C3F463 /* fah_key.wav in Resources */ = {isa = PBXBuildFile; fileRef = 15CC63642F752A6500C3F463 /* fah_key.wav */; };
 		15AA00022AFC761E00AAE24B /* SoundModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15AA00012AFC761E00AAE24B /* SoundModels.swift */; };
 		15AA00042AFC761E00AAE24B /* AudioProcessingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15AA00032AFC761E00AAE24B /* AudioProcessingService.swift */; };
 		15AA00062AFC761E00AAE24B /* SoundPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15AA00052AFC761E00AAE24B /* SoundPickerView.swift */; };
 		15AA00082AFC761E00AAE24B /* SoundLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15AA00072AFC761E00AAE24B /* SoundLibraryView.swift */; };
 		15AA000A2AFC761E00AAE24B /* AudioCustomizerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15AA00092AFC761E00AAE24B /* AudioCustomizerView.swift */; };
 		15AA000C2AFC761E00AAE24B /* PackEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15AA000B2AFC761E00AAE24B /* PackEditorView.swift */; };
+		15DD00022F90000000000001 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15DD00012F90000000000001 /* AppModel.swift */; };
+		15DD00042F90000000000001 /* LocalCatalogStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15DD00032F90000000000001 /* LocalCatalogStore.swift */; };
+		15DD00062F90000000000001 /* AudioPlaybackEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15DD00052F90000000000001 /* AudioPlaybackEngine.swift */; };
+		15DD00082F90000000000001 /* KeyboardMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15DD00072F90000000000001 /* KeyboardMonitor.swift */; };
+		15DD000A2F90000000000001 /* StudioTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15DD00092F90000000000001 /* StudioTheme.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -64,12 +70,18 @@
 		15CC635E2F752A6500C3F463 /* creamy_key.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = creamy_key.wav; sourceTree = "<group>"; };
 		15CC635F2F752A6500C3F463 /* clicky_key.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = clicky_key.wav; sourceTree = "<group>"; };
 		15CC63602F752A6500C3F463 /* quiet_key.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = quiet_key.wav; sourceTree = "<group>"; };
+		15CC63642F752A6500C3F463 /* fah_key.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = fah_key.wav; sourceTree = "<group>"; };
 		15AA00012AFC761E00AAE24B /* SoundModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundModels.swift; sourceTree = "<group>"; };
 		15AA00032AFC761E00AAE24B /* AudioProcessingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioProcessingService.swift; sourceTree = "<group>"; };
 		15AA00052AFC761E00AAE24B /* SoundPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundPickerView.swift; sourceTree = "<group>"; };
 		15AA00072AFC761E00AAE24B /* SoundLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundLibraryView.swift; sourceTree = "<group>"; };
 		15AA00092AFC761E00AAE24B /* AudioCustomizerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioCustomizerView.swift; sourceTree = "<group>"; };
 		15AA000B2AFC761E00AAE24B /* PackEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PackEditorView.swift; sourceTree = "<group>"; };
+		15DD00012F90000000000001 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		15DD00032F90000000000001 /* LocalCatalogStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalCatalogStore.swift; sourceTree = "<group>"; };
+		15DD00052F90000000000001 /* AudioPlaybackEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlaybackEngine.swift; sourceTree = "<group>"; };
+		15DD00072F90000000000001 /* KeyboardMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeyboardMonitor.swift; sourceTree = "<group>"; };
+		15DD00092F90000000000001 /* StudioTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudioTheme.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -126,10 +138,15 @@
 				15CC635C2F752A6500C3F463 /* Info.plist */,
 				155410752AFCA79F00AAE24B /* Assets.xcassets */,
 				15AA00012AFC761E00AAE24B /* SoundModels.swift */,
+				15DD00012F90000000000001 /* AppModel.swift */,
+				15DD00032F90000000000001 /* LocalCatalogStore.swift */,
+				15DD00052F90000000000001 /* AudioPlaybackEngine.swift */,
+				15DD00072F90000000000001 /* KeyboardMonitor.swift */,
 				15AA00032AFC761E00AAE24B /* AudioProcessingService.swift */,
 				1554106D2AFC7E4300AAE24B /* SoundManager.swift */,
 				1554103E2AFC761E00AAE24B /* ThocKeyApp.swift */,
 				155410402AFC761E00AAE24B /* ContentView.swift */,
+				15DD00092F90000000000001 /* StudioTheme.swift */,
 				15AA00052AFC761E00AAE24B /* SoundPickerView.swift */,
 				15AA00072AFC761E00AAE24B /* SoundLibraryView.swift */,
 				15AA00092AFC761E00AAE24B /* AudioCustomizerView.swift */,
@@ -146,6 +163,7 @@
 				15CC635E2F752A6500C3F463 /* creamy_key.wav */,
 				15CC635F2F752A6500C3F463 /* clicky_key.wav */,
 				15CC63602F752A6500C3F463 /* quiet_key.wav */,
+				15CC63642F752A6500C3F463 /* fah_key.wav */,
 			);
 			path = Sounds;
 			sourceTree = "<group>";
@@ -285,6 +303,7 @@
 				15CC63612F752A6500C3F463 /* creamy_key.wav in Resources */,
 				15CC63622F752A6500C3F463 /* clicky_key.wav in Resources */,
 				15CC63632F752A6500C3F463 /* quiet_key.wav in Resources */,
+				15CC63652F752A6500C3F463 /* fah_key.wav in Resources */,
 				155410462AFC761F00AAE24B /* Preview Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -313,6 +332,11 @@
 				155410412AFC761E00AAE24B /* ContentView.swift in Sources */,
 				1554103F2AFC761E00AAE24B /* ThocKeyApp.swift in Sources */,
 				1554106E2AFC7E4300AAE24B /* SoundManager.swift in Sources */,
+				15DD00022F90000000000001 /* AppModel.swift in Sources */,
+				15DD00042F90000000000001 /* LocalCatalogStore.swift in Sources */,
+				15DD00062F90000000000001 /* AudioPlaybackEngine.swift in Sources */,
+				15DD00082F90000000000001 /* KeyboardMonitor.swift in Sources */,
+				15DD000A2F90000000000001 /* StudioTheme.swift in Sources */,
 				15AA00022AFC761E00AAE24B /* SoundModels.swift in Sources */,
 				15AA00042AFC761E00AAE24B /* AudioProcessingService.swift in Sources */,
 				15AA00062AFC761E00AAE24B /* SoundPickerView.swift in Sources */,
@@ -490,11 +514,13 @@
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"ThocKey/Preview Content\"";
 				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				LM_FILTER_WARNINGS = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ThocKey/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "";
-				INFOPLIST_KEY_LSApplicationCategoryType = "";
+				INFOPLIST_KEY_CFBundleDisplayName = ThocKey;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSFileProviderDomainUsageDescription = "This app needs access to keyboard input to play typing sounds.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -503,7 +529,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.yourcompany.ThocKey;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pannathorn.ThocKey;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -523,11 +549,13 @@
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_ASSET_PATHS = "\"ThocKey/Preview Content\"";
 				ENABLE_APP_SANDBOX = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				LM_FILTER_WARNINGS = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ThocKey/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "";
-				INFOPLIST_KEY_LSApplicationCategoryType = "";
+				INFOPLIST_KEY_CFBundleDisplayName = ThocKey;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSFileProviderDomainUsageDescription = "This app needs access to keyboard input to play typing sounds.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -536,7 +564,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.yourcompany.ThocKey;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pannathorn.ThocKey;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -553,7 +581,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.yourcompany.ThocKeyTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pannathorn.ThocKeyTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
@@ -572,7 +600,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.yourcompany.ThocKeyTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pannathorn.ThocKeyTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
@@ -589,7 +617,7 @@
 				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.yourcompany.ThocKeyUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pannathorn.ThocKeyUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
@@ -605,7 +633,7 @@
 				DEAD_CODE_STRIPPING = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.yourcompany.ThocKeyUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pannathorn.ThocKeyUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
