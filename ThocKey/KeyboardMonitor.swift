@@ -17,6 +17,8 @@ public final class KeyboardMonitor: KeyboardMonitoring {
     private var globalMonitors: [Any] = []
     private var localMonitors: [Any] = []
     private var lastModifierFlags: NSEvent.ModifierFlags = []
+    private var suppressedKeyUpKeyCode: UInt16?
+    private var suppressModifierSoundsUntil: Date = .distantPast
 
     public init() {}
 
@@ -40,11 +42,21 @@ public final class KeyboardMonitor: KeyboardMonitoring {
         guard globalMonitors.isEmpty, localMonitors.isEmpty else { return }
         lastModifierFlags = NSEvent.modifierFlags.intersection(.deviceIndependentFlagsMask)
 
-        if let monitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown, handler: { event in
-            if Self.isMuteShortcut(event) { onToggleMute() } else { onKeyDown(event.keyCode) }
+        if let monitor = NSEvent.addGlobalMonitorForEvents(matching: .keyDown, handler: { [weak self] event in
+            if Self.isMuteShortcut(event) {
+                self?.suppressedKeyUpKeyCode = event.keyCode
+                self?.suppressModifierSoundsUntil = Date().addingTimeInterval(0.5)
+                onToggleMute()
+            } else {
+                onKeyDown(event.keyCode)
+            }
         }) { globalMonitors.append(monitor) }
 
-        if let monitor = NSEvent.addGlobalMonitorForEvents(matching: .keyUp, handler: { event in
+        if let monitor = NSEvent.addGlobalMonitorForEvents(matching: .keyUp, handler: { [weak self] event in
+            if event.keyCode == self?.suppressedKeyUpKeyCode {
+                self?.suppressedKeyUpKeyCode = nil
+                return
+            }
             onKeyUp(event.keyCode)
         }) { globalMonitors.append(monitor) }
 
@@ -52,8 +64,10 @@ public final class KeyboardMonitor: KeyboardMonitoring {
             self?.handleFlagsChanged(event: event, onKeyDown: onKeyDown, onKeyUp: onKeyUp)
         }) { globalMonitors.append(monitor) }
 
-        if let localDown = NSEvent.addLocalMonitorForEvents(matching: .keyDown, handler: { event in
+        if let localDown = NSEvent.addLocalMonitorForEvents(matching: .keyDown, handler: { [weak self] event in
             if Self.isMuteShortcut(event) {
+                self?.suppressedKeyUpKeyCode = event.keyCode
+                self?.suppressModifierSoundsUntil = Date().addingTimeInterval(0.5)
                 onToggleMute()
                 return nil
             }
@@ -61,7 +75,11 @@ public final class KeyboardMonitor: KeyboardMonitoring {
             return event
         }) { localMonitors.append(localDown) }
 
-        if let localUp = NSEvent.addLocalMonitorForEvents(matching: .keyUp, handler: { event in
+        if let localUp = NSEvent.addLocalMonitorForEvents(matching: .keyUp, handler: { [weak self] event in
+            if event.keyCode == self?.suppressedKeyUpKeyCode {
+                self?.suppressedKeyUpKeyCode = nil
+                return nil
+            }
             onKeyUp(event.keyCode)
             return event
         }) { localMonitors.append(localUp) }
@@ -78,6 +96,8 @@ public final class KeyboardMonitor: KeyboardMonitoring {
         globalMonitors.removeAll()
         localMonitors.removeAll()
         lastModifierFlags = []
+        suppressedKeyUpKeyCode = nil
+        suppressModifierSoundsUntil = .distantPast
     }
 
     private func handleFlagsChanged(
@@ -87,6 +107,11 @@ public final class KeyboardMonitor: KeyboardMonitoring {
     ) {
         let currentFlags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
         let keyCode = event.keyCode
+
+        if Date() < suppressModifierSoundsUntil {
+            lastModifierFlags = currentFlags
+            return
+        }
 
         let flag: NSEvent.ModifierFlags? = {
             switch keyCode {

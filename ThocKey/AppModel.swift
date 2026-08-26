@@ -42,7 +42,10 @@ public final class AppModel: ObservableObject {
     }()
 
     @Published public var isGlobalSoundEnabled: Bool {
-        didSet { userDefaults.set(isGlobalSoundEnabled, forKey: Keys.soundEnabled) }
+        didSet {
+            userDefaults.set(isGlobalSoundEnabled, forKey: Keys.soundEnabled)
+            if !isGlobalSoundEnabled { playback?.stopAll() }
+        }
     }
     @Published public var masterVolume: Double {
         didSet {
@@ -56,7 +59,11 @@ public final class AppModel: ObservableObject {
         didSet { userDefaults.set(appearancePreference.rawValue, forKey: Keys.appearance) }
     }
     @Published public var selectedTab: StudioTab = .packs
-    @Published public var isPaused: Bool = false
+    @Published public var isPaused: Bool = false {
+        didSet {
+            if isPaused { playback?.stopAll() }
+        }
+    }
     @Published public var pauseRemainingSeconds: Int = 0
     @Published public private(set) var selectedPackID: String
     @Published public private(set) var activePack: SoundPack = BuiltInSoundData.builtInPacks[0]
@@ -311,19 +318,26 @@ public final class AppModel: ObservableObject {
         let sound = soundLibrary[index]
         guard !sound.isBuiltIn else { throw ThocKeyError.builtInContentIsReadOnly }
 
-        let blockingPacks = allPacks.filter { pack in
-            pack.sourceSoundId == nil &&
-                (pack.defaultSoundId == id || (packMappings[pack.id] ?? pack.keyMappings).values.contains(id))
-        }.map(\.name)
-        guard blockingPacks.isEmpty else { throw ThocKeyError.soundInUse(blockingPacks) }
-
         let oldSounds = soundLibrary
         let oldPacks = customPacks
         let oldMappings = packMappings
         let oldSelectedID = selectedPackID
+
         let generatedIDs = Set(customPacks.filter { $0.sourceSoundId == id }.map(\.id))
         customPacks.removeAll { generatedIDs.contains($0.id) }
         generatedIDs.forEach { packMappings.removeValue(forKey: $0) }
+
+        for packIndex in customPacks.indices where customPacks[packIndex].defaultSoundId == id {
+            customPacks[packIndex].defaultSoundId = BuiltInSoundData.builtInSounds[0].id
+        }
+
+        for packID in packMappings.keys {
+            packMappings[packID] = packMappings[packID]?.filter { $0.value != id }
+        }
+        for packIndex in customPacks.indices {
+            customPacks[packIndex].keyMappings = customPacks[packIndex].keyMappings.filter { $0.value != id }
+        }
+
         if generatedIDs.contains(selectedPackID) { selectedPackID = BuiltInSoundData.defaultPackID }
         soundLibrary.remove(at: index)
         updateActivePack()
@@ -601,8 +615,20 @@ public final class AppModel: ObservableObject {
     }
 
     private func apply(_ catalog: CatalogManifest) {
-        soundLibrary = BuiltInSoundData.builtInSounds + catalog.sounds.filter { !$0.isBuiltIn && soundFileExists($0) }
-        customPacks = catalog.packs.filter { !$0.isBuiltIn }
+        var loadedSounds = catalog.sounds.filter { !$0.isBuiltIn && soundFileExists($0) }
+        for index in loadedSounds.indices {
+            if loadedSounds[index].displayName == "Fah Meme (Custom) (Custom)" || loadedSounds[index].displayName == "Fah" {
+                loadedSounds[index].displayName = "Fah (Meme)"
+            }
+        }
+        var loadedPacks = catalog.packs.filter { !$0.isBuiltIn }
+        for index in loadedPacks.indices {
+            if loadedPacks[index].name == "Fah Meme (Custom) (Custom)" || loadedPacks[index].name == "Fah" {
+                loadedPacks[index].name = "Fah (Meme)"
+            }
+        }
+        soundLibrary = BuiltInSoundData.builtInSounds + loadedSounds
+        customPacks = loadedPacks
         packMappings = catalog.packMappings.mapValues { mapping in
             mapping.mapValues(BuiltInSoundData.unifiedID(forLegacyID:))
         }

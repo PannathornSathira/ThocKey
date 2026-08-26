@@ -34,6 +34,9 @@ public struct ContentView: View {
             Text(appModel.presentedError?.localizedDescription ?? "Please try again.")
         }
         .onAppear { appModel.refreshAccessibilityStatus() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            appModel.refreshAccessibilityStatus()
+        }
     }
 
     private var errorBinding: Binding<Bool> {
@@ -418,22 +421,43 @@ private struct SettingsStudioView: View {
                 }
 
                 StudioSurface {
-                    HStack(spacing: StudioTheme.Spacing.medium) {
-                        Image(systemName: appModel.isAccessibilityEnabled ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
-                            .font(.system(size: 24))
-                            .foregroundStyle(appModel.isAccessibilityEnabled ? StudioTheme.moss : StudioTheme.caramel)
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(appModel.isAccessibilityEnabled ? "Accessibility is active" : "Accessibility permission required")
-                                .font(.system(size: 15, weight: .semibold))
-                                .foregroundStyle(StudioTheme.espresso)
-                            Text("ThocKey uses this permission only to detect key press notifications and play sound locally.")
-                                .font(.system(size: 12))
-                                .foregroundStyle(StudioTheme.secondaryText)
+                    VStack(alignment: .leading, spacing: StudioTheme.Spacing.regular) {
+                        HStack(spacing: StudioTheme.Spacing.medium) {
+                            Image(systemName: appModel.isAccessibilityEnabled ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                                .font(.system(size: 24))
+                                .foregroundStyle(appModel.isAccessibilityEnabled ? StudioTheme.moss : StudioTheme.caramel)
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(appModel.isAccessibilityEnabled ? "Accessibility is active" : "Accessibility permission required")
+                                    .font(.system(size: 15, weight: .semibold))
+                                    .foregroundStyle(StudioTheme.espresso)
+                                Text("ThocKey uses this permission only to detect key press notifications and play sound locally.")
+                                    .font(.system(size: 12))
+                                    .foregroundStyle(StudioTheme.secondaryText)
+                            }
+                            Spacer()
+                            if appModel.isAccessibilityEnabled {
+                                Button("Refresh") { appModel.refreshAccessibilityStatus() }
+                                    .buttonStyle(SecondaryButtonStyle())
+                            } else {
+                                HStack(spacing: StudioTheme.Spacing.small) {
+                                    Button("Check Status") { appModel.refreshAccessibilityStatus() }
+                                        .buttonStyle(SecondaryButtonStyle())
+                                    Button("Open Settings") { openAccessibilitySettings() }
+                                        .buttonStyle(PrimaryButtonStyle())
+                                }
+                            }
                         }
-                        Spacer()
+
                         if !appModel.isAccessibilityEnabled {
-                            Button("Open Settings") { openAccessibilitySettings() }
-                                .buttonStyle(PrimaryButtonStyle())
+                            Divider().overlay(StudioTheme.separator)
+                            HStack(spacing: 8) {
+                                Image(systemName: "info.circle")
+                                    .foregroundStyle(StudioTheme.caramel)
+                                    .font(.system(size: 13))
+                                Text("If already enabled in macOS System Settings, click 'Check Status' or toggle the switch off and on in System Settings.")
+                                    .font(.system(size: 11))
+                                    .foregroundStyle(StudioTheme.secondaryText)
+                            }
                         }
                     }
                 }
@@ -449,6 +473,10 @@ private struct SettingsStudioView: View {
                 }
             }
             .padding(StudioTheme.Spacing.xLarge)
+        }
+        .onAppear { appModel.refreshAccessibilityStatus() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            appModel.refreshAccessibilityStatus()
         }
     }
 

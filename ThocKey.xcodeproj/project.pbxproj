@@ -20,6 +20,7 @@
 		15CC63612F752A6500C3F463 /* creamy_key.wav in Resources */ = {isa = PBXBuildFile; fileRef = 15CC635E2F752A6500C3F463 /* creamy_key.wav */; };
 		15CC63622F752A6500C3F463 /* clicky_key.wav in Resources */ = {isa = PBXBuildFile; fileRef = 15CC635F2F752A6500C3F463 /* clicky_key.wav */; };
 		15CC63632F752A6500C3F463 /* quiet_key.wav in Resources */ = {isa = PBXBuildFile; fileRef = 15CC63602F752A6500C3F463 /* quiet_key.wav */; };
+		15CC63652F752A6500C3F463 /* fah_key.wav in Resources */ = {isa = PBXBuildFile; fileRef = 15CC63642F752A6500C3F463 /* fah_key.wav */; };
 		15AA00022AFC761E00AAE24B /* SoundModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15AA00012AFC761E00AAE24B /* SoundModels.swift */; };
 		15AA00042AFC761E00AAE24B /* AudioProcessingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15AA00032AFC761E00AAE24B /* AudioProcessingService.swift */; };
 		15AA00062AFC761E00AAE24B /* SoundPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15AA00052AFC761E00AAE24B /* SoundPickerView.swift */; };
@@ -69,6 +70,7 @@
 		15CC635E2F752A6500C3F463 /* creamy_key.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = creamy_key.wav; sourceTree = "<group>"; };
 		15CC635F2F752A6500C3F463 /* clicky_key.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = clicky_key.wav; sourceTree = "<group>"; };
 		15CC63602F752A6500C3F463 /* quiet_key.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = quiet_key.wav; sourceTree = "<group>"; };
+		15CC63642F752A6500C3F463 /* fah_key.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = fah_key.wav; sourceTree = "<group>"; };
 		15AA00012AFC761E00AAE24B /* SoundModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundModels.swift; sourceTree = "<group>"; };
 		15AA00032AFC761E00AAE24B /* AudioProcessingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioProcessingService.swift; sourceTree = "<group>"; };
 		15AA00052AFC761E00AAE24B /* SoundPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundPickerView.swift; sourceTree = "<group>"; };
@@ -161,6 +163,7 @@
 				15CC635E2F752A6500C3F463 /* creamy_key.wav */,
 				15CC635F2F752A6500C3F463 /* clicky_key.wav */,
 				15CC63602F752A6500C3F463 /* quiet_key.wav */,
+				15CC63642F752A6500C3F463 /* fah_key.wav */,
 			);
 			path = Sounds;
 			sourceTree = "<group>";
@@ -300,6 +303,7 @@
 				15CC63612F752A6500C3F463 /* creamy_key.wav in Resources */,
 				15CC63622F752A6500C3F463 /* clicky_key.wav in Resources */,
 				15CC63632F752A6500C3F463 /* quiet_key.wav in Resources */,
+				15CC63652F752A6500C3F463 /* fah_key.wav in Resources */,
 				155410462AFC761F00AAE24B /* Preview Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -30,19 +30,20 @@ final class ThocKeyTests: XCTestCase {
         XCTAssertTrue(packs.allSatisfy { UUID(uuidString: $0.id) != nil })
     }
 
-    func testBuiltInPacks_ContainAllFourDefaultPacks() {
+    func testBuiltInPacks_ContainAllDefaultPacks() {
         let packs = BuiltInSoundData.builtInPacks
         let names = packs.map(\.name)
         XCTAssertTrue(names.contains("Thocky (Default)"))
         XCTAssertTrue(names.contains("Creamy"))
         XCTAssertTrue(names.contains("Clicky"))
         XCTAssertTrue(names.contains("Quiet"))
+        XCTAssertTrue(names.contains("Fah (Meme)"))
     }
 
     func testBuiltInSounds_AreUnifiedAndReleaseFallsBackToPress() {
         let sounds = BuiltInSoundData.builtInSounds
-        XCTAssertEqual(sounds.count, 4)
-        XCTAssertEqual(Set(sounds.map(\.displayName)).count, 4)
+        XCTAssertEqual(sounds.count, 5)
+        XCTAssertEqual(Set(sounds.map(\.displayName)).count, 5)
 
         let original = sounds.first { $0.id == "builtin_thock" }
         XCTAssertEqual(original?.pressFileName, "thock_down")
@@ -51,6 +52,9 @@ final class ThocKeyTests: XCTestCase {
         let creamy = sounds.first { $0.id == "builtin_creamy" }
         XCTAssertNil(creamy?.releaseFileName)
         XCTAssertEqual(creamy?.fileName(for: .up), creamy?.pressFileName)
+
+        let fah = sounds.first { $0.id == "builtin_fah" }
+        XCTAssertEqual(fah?.displayName, "Fah (Meme)")
     }
 
     func testSelectPack_SwitchesActivePackSuccessfully() {
@@ -119,15 +123,27 @@ final class ThocKeyTests: XCTestCase {
         XCTAssertNil(second.activePack.keyMappings[49])
     }
 
-    func testDeleteSound_WhenReferencedReturnsPackNames() throws {
+    func testDeleteSound_CleansUpMappingsAndResetsPackDefaults() throws {
         let model = makeModel()
         let sound = try model.importSound(from: bundledSoundURL())
-        let pack = SoundPack(name: "Reference Pack", defaultSoundId: sound.id)
+        let pack = SoundPack(name: "Reference Pack", defaultSoundId: sound.id, keyMappings: [49: sound.id])
         try model.saveCustomPack(pack)
+        model.setMapping(for: 50, soundId: sound.id)
 
-        XCTAssertThrowsError(try model.deleteSound(id: sound.id)) { error in
-            XCTAssertEqual(error as? ThocKeyError, .soundInUse(["Reference Pack"]))
-        }
+        XCTAssertNoThrow(try model.deleteSound(id: sound.id))
+        XCTAssertFalse(model.customSounds.contains(where: { $0.id == sound.id }))
+        XCTAssertEqual(model.customPacks.first(where: { $0.name == "Reference Pack" })?.defaultSoundId, BuiltInSoundData.builtInSounds[0].id)
+        XCTAssertNil(model.activePack.keyMappings[50])
+    }
+
+    func testMute_StopsAudioPlaybackImmediately() {
+        let mockPlayer = MockAudioPlayer()
+        let model = makeModel(playback: mockPlayer)
+        model.isGlobalSoundEnabled = false
+        XCTAssertEqual(mockPlayer.stopAllCount, 1)
+
+        model.isPaused = true
+        XCTAssertEqual(mockPlayer.stopAllCount, 2)
     }
 
     func testImportedSound_AppearsImmediatelyAndGeneratedPackIsReused() throws {
@@ -403,9 +419,11 @@ private func XCTAssertThrowsErrorAsync<T>(
 @MainActor
 private final class MockAudioPlayer: AudioPlaying {
     var playedSoundIDs: [String] = []
+    var stopAllCount = 0
     func setVolume(_ volume: Double) {}
     func preload(soundID: String, from url: URL) throws {}
     func play(soundID: String, from url: URL) throws { playedSoundIDs.append(soundID) }
+    func stopAll() { stopAllCount += 1 }
     func remove(soundID: String) {}
     func clearCache() {}
 }

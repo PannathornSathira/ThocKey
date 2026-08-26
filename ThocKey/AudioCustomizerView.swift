@@ -356,8 +356,20 @@ public struct AudioCustomizerView: View {
     }
     
     private func setupInitialState() {
-        let baseName = initialSound?.displayName ?? (initialFileURL?.deletingPathExtension().lastPathComponent ?? "Custom Sound")
-        customDisplayName = "\(baseName) (Custom)"
+        let rawName = initialSound?.displayName ?? (initialFileURL?.deletingPathExtension().lastPathComponent ?? "Custom Sound")
+        let cleaned = rawName
+            .replacingOccurrences(of: #"\s*\((Custom|Meme)\)"#, with: "", options: [.regularExpression, .caseInsensitive])
+            .trimmingCharacters(in: .whitespaces)
+
+        if cleaned.caseInsensitiveCompare("fah") == .orderedSame || cleaned.caseInsensitiveCompare("fah meme") == .orderedSame {
+            customDisplayName = "Fah (Meme)"
+        } else if cleaned.caseInsensitiveCompare("custom sound") == .orderedSame || cleaned.isEmpty {
+            customDisplayName = "Custom Sound"
+        } else if initialSound?.isBuiltIn == true {
+            customDisplayName = "\(cleaned) (Custom)"
+        } else {
+            customDisplayName = cleaned
+        }
 
         if let sound = initialSound, sound.releaseFileName != nil {
             usePressForRelease = false

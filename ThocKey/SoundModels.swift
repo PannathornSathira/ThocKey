@@ -209,6 +209,10 @@ public enum BuiltInSoundData {
         SoundItem(
             id: "builtin_quiet", displayName: "Quiet", pressFileName: "quiet_key",
             pressDuration: 0.06, category: .builtIn, isBuiltIn: true
+        ),
+        SoundItem(
+            id: "builtin_fah", displayName: "Fah (Meme)", pressFileName: "fah_key",
+            pressDuration: 0.84, category: .builtIn, isBuiltIn: true
         )
     ]
 
@@ -228,6 +232,10 @@ public enum BuiltInSoundData {
         SoundPack(
             id: "00000000-0000-4000-8000-000000000004", name: "Quiet",
             defaultSoundId: "builtin_quiet", isBuiltIn: true
+        ),
+        SoundPack(
+            id: "00000000-0000-4000-8000-000000000005", name: "Fah (Meme)",
+            defaultSoundId: "builtin_fah", isBuiltIn: true
         )
     ]
 
@@ -237,6 +245,7 @@ public enum BuiltInSoundData {
         case "builtin_creamy_down", "builtin_creamy_up", "builtin_creamy": "builtin_creamy"
         case "builtin_clicky_down", "builtin_clicky_up", "builtin_clicky": "builtin_clicky"
         case "builtin_quiet_down", "builtin_quiet_up", "builtin_quiet": "builtin_quiet"
+        case "builtin_fah_down", "builtin_fah_up", "builtin_fah": "builtin_fah"
         default: id
         }
     }

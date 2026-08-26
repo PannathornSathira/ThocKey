@@ -9,6 +9,7 @@ Sounds (Mar 2021)** collection, mirrored in
 | Creamy | `creamy_key.wav` | `Keyboard - Key 1.wav` |
 | Clicky | `clicky_key.wav` | `Keyboard - Key 2.wav` |
 | Quiet | `quiet_key.wav` | `Keyboard - Key 4.wav` |
+| Fah (Meme) | `fah_key.wav` | Community Meme Sample (Fah) |
 
 The source collection and its included pack readme place these sounds under
 [CC0 1.0 Universal](https://creativecommons.org/publicdomain/zero/1.0/).

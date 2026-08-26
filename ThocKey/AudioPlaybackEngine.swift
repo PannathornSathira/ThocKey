@@ -6,6 +6,7 @@ public protocol AudioPlaying: AnyObject {
     func setVolume(_ volume: Double)
     func preload(soundID: String, from url: URL) throws
     func play(soundID: String, from url: URL) throws
+    func stopAll()
     func remove(soundID: String)
     func clearCache()
 }
@@ -69,6 +70,10 @@ public final class AudioPlaybackEngine: AudioPlaying {
         player.scheduleBuffer(pcmBuffer, at: nil, options: .interrupts)
         player.play()
         currentPlayerIndex = (currentPlayerIndex + 1) % maxPlayers
+    }
+
+    public func stopAll() {
+        players.forEach { if $0.isPlaying { $0.stop() } }
     }
 
     public func remove(soundID: String) {
